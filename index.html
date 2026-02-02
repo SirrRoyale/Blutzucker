@@ -1,20 +1,35 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Blutzucker-Simulation</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Chart.js (lokal ODER CDN, eins von beiden) -->
+  <script src="chart.js"></script>
+</head>
+
 <body>
   <div class="app">
 
-    <header>
+    <header class="top">
       <h1>🩸 Blutzucker-Simulation</h1>
-      <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      <div class="stats">
-        <div class="stat">
+
+      <div class="main-stats">
+        <div class="time-card">
           <span>Uhrzeit</span>
-          <strong id="day">Tag 1</strong> – <strong id="time">06:00</strong>
+          <strong id="day">Tag 1</strong>
+          <div id="time" class="time-big">06:00</div>
         </div>
-        <div class="stat">
+
+        <div class="glucose-card">
           <span>Blutzucker</span>
-          <strong><span id="value">90</span> mg/dL</strong>
+          <div class="glucose-value">
+            <span id="value">90</span>
+            <small>mg/dL</small>
+          </div>
         </div>
       </div>
     </header>
@@ -27,6 +42,12 @@
     </section>
 
     <section class="chart-card">
+      <select onchange="changeRange(this.value)">
+        <option value="10">Letzte 10 Tage</option>
+        <option value="5">Letzte 5 Tage</option>
+        <option value="all">Alle Tage</option>
+      </select>
+
       <canvas id="chart"></canvas>
     </section>
 
@@ -34,19 +55,20 @@
       <button class="btn time" onclick="nextHour()">⏩ +1 Stunde</button>
     </section>
 
-    <section class="avatar-card">
-  <h2>Körperzustand</h2>
+    <section class="avatar-card" id="avatarCard">
+      <button class="btn toggle" onclick="toggleAvatar()">👤 Körperzustand ein/aus</button>
+      <h2>Körperzustand</h2>
 
-  <div class="avatar-wrapper">
-    <div id="avatar" class="avatar normal"></div>
+      <div class="avatar-wrapper">
+        <div id="avatar" class="avatar normal"></div>
+      </div>
+
+      <p id="avatar-text">Normalgewicht</p>
+    </section>
+
   </div>
 
-  <p id="avatar-text">Normalgewicht</p>
-</section>
-
-
-  </div>
-
-  <script src="chart.js"></script>
-<script src="script.js"></script>
+  <!-- DEIN JS IMMER GANZ UNTEN -->
+  <script src="script.js"></script>
 </body>
+</html>

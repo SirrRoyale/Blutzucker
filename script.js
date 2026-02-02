@@ -11,6 +11,9 @@ let energy = 0; // langfristiger Energieüberschuss
 const avatar = document.getElementById("avatar");
 const avatarText = document.getElementById("avatar-text");
 
+let maxDays = 10; // Standard
+const HOURS_PER_DAY = 24;
+
 
 // ===== CHART =====
 const canvas = document.getElementById("chart");
@@ -30,25 +33,58 @@ const chart = new Chart(ctx, {
   type: "line",
   data: data,
   options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        min: 50,
-        max: 350,
-        title: {
-          display: true,
-          text: "Blutzucker (mg/dL)"
-        }
-      },
-      x: {
-        title: {
-          display: true,
-          text: "Uhrzeit"
-        }
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      labels: {
+        color: "#ffffff",   
+        font: { size: 14 }
       }
     }
+  },
+  scales: {
+    y: {
+      min: 50,
+      max: 350,
+      ticks: {
+        color: "#ffffff"   
+      },
+      grid: {
+        color: "rgba(255,255,255,0.1)"
+      },
+      title: {
+        display: true,
+        text: "Blutzucker (mg/dL)",
+        color: "#ffffff"  
+      }
+    },
+    x: {
+  ticks: {
+    color: "#ffffff",
+    autoSkip: false,
+    callback: function(value, index) {
+      // Zeige NUR jede 24. Stunde (= neuer Tag)
+      if (index % 24 === 0) {
+        return this.getLabelForValue(value);
+      }
+      return "";
+    }
+  },
+  grid: {
+    color: "rgba(255,255,255,0.1)"
+  },
+  title: {
+    display: true,
+    text: "Zeit",
+    color: "#ffffff"
   }
+}
+
+
+  }
+}
+
 });
 
 // ===== HILFSFUNKTIONEN =====
@@ -76,10 +112,24 @@ function nextHour() {
 
   updateTime();
   valueSpan.textContent = Math.round(blutzucker);
+  updateGlucoseColor();
 
   data.labels.push(`Tag ${day} ${String(hour).padStart(2, "0")}:00`);
-  data.datasets[0].data.push(blutzucker);
-  chart.update();
+data.datasets[0].data.push(blutzucker);
+
+if (maxDays !== "all") {
+  const maxPoints = maxDays * 24;
+
+  while (data.labels.length > maxPoints) {
+    data.labels.shift();
+    data.datasets[0].data.shift();
+  }
+}
+
+chart.update();
+
+
+
 }
 
 
@@ -89,6 +139,8 @@ function zucker() {
   energy += 5;
   valueSpan.textContent = blutzucker;
   updateAvatar();
+  updateGlucoseColor();
+  
 }
 
 function mahlzeit() {
@@ -96,6 +148,7 @@ function mahlzeit() {
   energy += 3;
   valueSpan.textContent = blutzucker;
   updateAvatar();
+  updateGlucoseColor();
 }
 
 function sport() {
@@ -103,6 +156,7 @@ function sport() {
   energy -= 6;
   valueSpan.textContent = blutzucker;
   updateAvatar();
+  updateGlucoseColor();
 }
 
 
@@ -120,6 +174,8 @@ function reset() {
   valueSpan.textContent = blutzucker;
   updateAvatar();
   chart.update();
+  updateGlucoseColor();
+
 }
 
 function updateAvatar() {
@@ -138,5 +194,32 @@ function updateAvatar() {
   else {
     avatar.className = "avatar obese";
     avatarText.textContent = "Starkes Übergewicht";
+  }
+}
+let avatarVisible = true;
+const avatarCard = document.getElementById("avatarCard");
+
+function toggleAvatar() {
+  avatarVisible = !avatarVisible;
+  avatarCard.style.display = avatarVisible ? "block" : "none";
+}
+function changeRange(value) {
+  if (value === "all") {
+    maxDays = "all";
+  } else {
+    maxDays = Number(value);
+  }
+}
+function updateGlucoseColor() {
+  const glucoseEl = document.querySelector(".glucose-value span");
+
+  if (blutzucker < 70) {
+    glucoseEl.style.color = "#ff6b6b"; // rot (Unterzucker)
+  } 
+  else if (blutzucker > 180) {
+    glucoseEl.style.color = "#ffa94d"; // orange (Überzucker)
+  } 
+  else {
+    glucoseEl.style.color = "#4dabf7"; // blau (Normalbereich)
   }
 }
