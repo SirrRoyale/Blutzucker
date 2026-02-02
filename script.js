@@ -1,9 +1,12 @@
 // ===== BASIS =====
 let blutzucker = 90;
 let hour = 6;
+let day = 1;
 
 const timeSpan = document.getElementById("time");
+const daySpan = document.getElementById("day");
 const valueSpan = document.getElementById("value");
+
 
 // ===== CHART =====
 const canvas = document.getElementById("chart");
@@ -47,7 +50,9 @@ const chart = new Chart(ctx, {
 // ===== HILFSFUNKTIONEN =====
 function updateTime() {
   timeSpan.textContent = String(hour).padStart(2, "0") + ":00";
+  daySpan.textContent = "Tag " + day;
 }
+
 
 function regulation() {
   if (blutzucker > 110) blutzucker -= 10; // Insulin
@@ -57,15 +62,22 @@ function regulation() {
 // ===== ZEIT =====
 function nextHour() {
   hour++;
+
+  if (hour === 24) {
+    hour = 0;
+    day++;
+  }
+
   regulation();
 
   updateTime();
   valueSpan.textContent = Math.round(blutzucker);
 
-  data.labels.push(timeSpan.textContent);
+  data.labels.push(`Tag ${day} ${String(hour).padStart(2, "0")}:00`);
   data.datasets[0].data.push(blutzucker);
   chart.update();
 }
+
 
 // ===== BUTTONS =====
 function zucker() {
@@ -86,6 +98,7 @@ function sport() {
 function reset() {
   blutzucker = 90;
   hour = 6;
+  day = 1;
 
   data.labels.length = 1;
   data.datasets[0].data.length = 1;
@@ -95,3 +108,4 @@ function reset() {
   valueSpan.textContent = blutzucker;
   chart.update();
 }
+
