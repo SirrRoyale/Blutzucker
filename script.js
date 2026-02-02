@@ -1,31 +1,36 @@
-// ===== BASIS =====
-let blutzucker = 90;
+// ===== ZEIT =====
 let hour = 6;
 let day = 1;
 
+// ===== BLUTZUCKER =====
+let blutzucker = 90;
+
+// ===== HORMONE =====
+let insulin = 0;
+let glucagon = 0;
+const MIN_GLUCOSE = 30;
+const MAX_GLUCOSE = 600;
+
+
+// ===== DOM =====
 const timeSpan = document.getElementById("time");
 const daySpan = document.getElementById("day");
 const valueSpan = document.getElementById("value");
+const insulinBar = document.getElementById("insulinBar");
+const glucagonBar = document.getElementById("glucagonBar");
 
-let energy = 0; // langfristiger Energieüberschuss
-const avatar = document.getElementById("avatar");
-const avatarText = document.getElementById("avatar-text");
-
-let maxDays = 10; // Standard
-const HOURS_PER_DAY = 24;
 
 
 // ===== CHART =====
-const canvas = document.getElementById("chart");
-const ctx = canvas.getContext("2d");
+const ctx = document.getElementById("chart").getContext("2d");
 
 const data = {
   labels: ["06:00"],
   datasets: [{
     label: "Blutzucker (mg/dL)",
     data: [blutzucker],
-    borderWidth: 4,
-    tension: 0.35
+    borderWidth: 3,
+    tension: 0.3
   }]
 };
 
@@ -33,193 +38,127 @@ const chart = new Chart(ctx, {
   type: "line",
   data: data,
   options: {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      labels: {
-        color: "#ffffff",   
-        font: { size: 14 }
+    scales: {
+      y: {
+        min: 50,
+        max: 250
       }
     }
-  },
-  scales: {
-    y: {
-      min: 50,
-      max: 350,
-      ticks: {
-        color: "#ffffff"   
-      },
-      grid: {
-        color: "rgba(255,255,255,0.1)"
-      },
-      title: {
-        display: true,
-        text: "Blutzucker (mg/dL)",
-        color: "#ffffff"  
-      }
-    },
-    x: {
-  ticks: {
-    color: "#ffffff",
-    autoSkip: false,
-    callback: function(value, index) {
-      // Zeige NUR jede 24. Stunde (= neuer Tag)
-      if (index % 24 === 0) {
-        return this.getLabelForValue(value);
-      }
-      return "";
-    }
-  },
-  grid: {
-    color: "rgba(255,255,255,0.1)"
-  },
-  title: {
-    display: true,
-    text: "Zeit",
-    color: "#ffffff"
   }
-}
-
-
-  }
-}
-
 });
 
-// ===== HILFSFUNKTIONEN =====
+// ===== FUNKTIONEN =====
+
+// Anzeige aktualisieren
 function updateTime() {
   timeSpan.textContent = String(hour).padStart(2, "0") + ":00";
   daySpan.textContent = "Tag " + day;
+  valueSpan.textContent = Math.round(blutzucker);
 }
 
+// 🍬 Zucker
+function zucker() {
+  blutzucker += 30;
+  insulin += 15;
+  updateHormoneBars();
+clampGlucose();
+checkCriticalState();
 
-function regulation() {
-  if (blutzucker > 110) blutzucker -= 10; // Insulin
-  if (blutzucker < 70) blutzucker += 10;  // Glucagon
 }
 
-// ===== ZEIT =====
+// 🍽️ Mahlzeit
+function mahlzeit() {
+  blutzucker += 20;
+  insulin += 10;
+  updateHormoneBars();
+clampGlucose();
+checkCriticalState();
+
+}
+
+// 🏃 Sport
+function sport() {
+  blutzucker -= 25;
+  glucagon += 15;
+  updateHormoneBars();
+clampGlucose();
+checkCriticalState();
+
+}
+
+// 🧪 Hormonwirkung (pro Stunde)
+function hormoneRegulation() {
+  // Insulin senkt Blutzucker
+  if (insulin > 0) {
+    blutzucker -= insulin * 0.2;
+    insulin -= 3;
+    updateHormoneBars();
+clampGlucose();
+checkCriticalState();
+
+  }
+
+  // Glucagon erhöht Blutzucker
+  if (glucagon > 0) {
+    blutzucker += glucagon * 0.2;
+    glucagon -= 3;
+  }
+
+  insulin = Math.max(insulin, 0);
+  glucagon = Math.max(glucagon, 0);
+}
+
+// ⏩ +1 Stunde
 function nextHour() {
   hour++;
-
   if (hour === 24) {
     hour = 0;
     day++;
   }
 
-  regulation();
-
+  hormoneRegulation();
   updateTime();
-  valueSpan.textContent = Math.round(blutzucker);
-  updateGlucoseColor();
+  clampGlucose();
+checkCriticalState();
+
 
   data.labels.push(`Tag ${day} ${String(hour).padStart(2, "0")}:00`);
-data.datasets[0].data.push(blutzucker);
-
-if (maxDays !== "all") {
-  const maxPoints = maxDays * 24;
-
-  while (data.labels.length > maxPoints) {
-    data.labels.shift();
-    data.datasets[0].data.shift();
-  }
+  data.datasets[0].data.push(blutzucker);
+  chart.update();
 }
 
-chart.update();
-
-
-
-}
-
-
-// ===== BUTTONS =====
-function zucker() {
-  blutzucker += 30;
-  energy += 5;
-  valueSpan.textContent = blutzucker;
-  updateAvatar();
-  updateGlucoseColor();
-  
-}
-
-function mahlzeit() {
-  blutzucker += 20;
-  energy += 3;
-  valueSpan.textContent = blutzucker;
-  updateAvatar();
-  updateGlucoseColor();
-}
-
-function sport() {
-  blutzucker -= 25;
-  energy -= 6;
-  valueSpan.textContent = blutzucker;
-  updateAvatar();
-  updateGlucoseColor();
-}
-
-
+// 🔄 Reset
 function reset() {
-  blutzucker = 90;
   hour = 6;
   day = 1;
-  energy = 0;
+  blutzucker = 90;
+  insulin = 0;
+  glucagon = 0;
 
-  data.labels.length = 1;
-  data.datasets[0].data.length = 1;
-  data.datasets[0].data[0] = blutzucker;
+  data.labels = ["06:00"];
+  data.datasets[0].data = [blutzucker];
+  chart.update();
 
   updateTime();
-  valueSpan.textContent = blutzucker;
-  updateAvatar();
-  chart.update();
-  updateGlucoseColor();
+  updateHormoneBars();
 
 }
 
-function updateAvatar() {
-  if (energy < -20) {
-    avatar.className = "avatar slim";
-    avatarText.textContent = "Untergewichtig";
-  } 
-  else if (energy < 20) {
-    avatar.className = "avatar normal";
-    avatarText.textContent = "Normalgewicht";
-  } 
-  else if (energy < 60) {
-    avatar.className = "avatar heavy";
-    avatarText.textContent = "Übergewicht";
-  } 
-  else {
-    avatar.className = "avatar obese";
-    avatarText.textContent = "Starkes Übergewicht";
+updateTime();
+
+function updateHormoneBars() {
+  insulinBar.style.width = Math.min(insulin * 3, 100) + "%";
+  glucagonBar.style.width = Math.min(glucagon * 3, 100) + "%";
+}
+function clampGlucose() {
+  if (blutzucker < MIN_GLUCOSE) blutzucker = MIN_GLUCOSE;
+  if (blutzucker > MAX_GLUCOSE) blutzucker = MAX_GLUCOSE;
+}
+function checkCriticalState() {
+  if (blutzucker <= 40) {
+    alert("Kritische Unterzuckerung! Bewusstlosigkeit moeglich.");
   }
-}
-let avatarVisible = true;
-const avatarCard = document.getElementById("avatarCard");
-
-function toggleAvatar() {
-  avatarVisible = !avatarVisible;
-  avatarCard.style.display = avatarVisible ? "block" : "none";
-}
-function changeRange(value) {
-  if (value === "all") {
-    maxDays = "all";
-  } else {
-    maxDays = Number(value);
-  }
-}
-function updateGlucoseColor() {
-  const glucoseEl = document.querySelector(".glucose-value span");
-
-  if (blutzucker < 70) {
-    glucoseEl.style.color = "#ff6b6b"; // rot (Unterzucker)
-  } 
-  else if (blutzucker > 180) {
-    glucoseEl.style.color = "#ffa94d"; // orange (Überzucker)
-  } 
-  else {
-    glucoseEl.style.color = "#4dabf7"; // blau (Normalbereich)
+  if (blutzucker >= 400) {
+    alert("Kritische Ueberzuckerung! Akute Gefahr.");
   }
 }

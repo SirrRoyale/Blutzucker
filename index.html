@@ -2,73 +2,42 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Blutzucker-Simulation</title>
-
-  <!-- CSS -->
+  <title>Blutzucker Simulation</title>
   <link rel="stylesheet" href="style.css">
-
-  <!-- Chart.js (lokal ODER CDN, eins von beiden) -->
-  <script src="chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
-  <div class="app">
 
-    <header class="top">
-      <h1>🩸 Blutzucker-Simulation</h1>
+  <h1>🩸 Blutzucker-Simulation</h1>
 
-      <div class="main-stats">
-        <div class="time-card">
-          <span>Uhrzeit</span>
-          <strong id="day">Tag 1</strong>
-          <div id="time" class="time-big">06:00</div>
-        </div>
-
-        <div class="glucose-card">
-          <span>Blutzucker</span>
-          <div class="glucose-value">
-            <span id="value">90</span>
-            <small>mg/dL</small>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <section class="controls">
-      <button class="btn sugar" onclick="zucker()">🍬 Zucker</button>
-      <button class="btn meal" onclick="mahlzeit()">🍽️ Mahlzeit</button>
-      <button class="btn sport" onclick="sport()">🏃 Sport</button>
-      <button class="btn reset" onclick="reset()">🔄 Reset</button>
-    </section>
-
-    <section class="chart-card">
-      <select onchange="changeRange(this.value)">
-        <option value="10">Letzte 10 Tage</option>
-        <option value="5">Letzte 5 Tage</option>
-        <option value="all">Alle Tage</option>
-      </select>
-
-      <canvas id="chart"></canvas>
-    </section>
-
-    <section class="time-control">
-      <button class="btn time" onclick="nextHour()">⏩ +1 Stunde</button>
-    </section>
-
-    <section class="avatar-card" id="avatarCard">
-      <button class="btn toggle" onclick="toggleAvatar()">👤 Körperzustand ein/aus</button>
-      <h2>Körperzustand</h2>
-
-      <div class="avatar-wrapper">
-        <div id="avatar" class="avatar normal"></div>
-      </div>
-
-      <p id="avatar-text">Normalgewicht</p>
-    </section>
-
+  <p><strong id="day">Tag 1</strong> – <strong id="time">06:00</strong></p>
+  <p>Blutzucker: <strong><span id="value">90</span> mg/dL</strong></p>
+<div class="hormones">
+  <div class="hormone insulin">
+    <span>Insulin</span>
+    <div class="bar">
+      <div id="insulinBar"></div>
+    </div>
   </div>
 
-  <!-- DEIN JS IMMER GANZ UNTEN -->
+  <div class="hormone glucagon">
+    <span>Glucagon</span>
+    <div class="bar">
+      <div id="glucagonBar"></div>
+    </div>
+  </div>
+</div>
+
+  <div class="controls">
+    <button onclick="zucker()">🍬 Zucker</button>
+    <button onclick="mahlzeit()">🍽️ Mahlzeit</button>
+    <button onclick="sport()">🏃 Sport</button>
+    <button onclick="nextHour()">⏩ +1 Stunde</button>
+    <button onclick="reset()">🔄 Reset</button>
+  </div>
+
+  <canvas id="chart"></canvas>
+
   <script src="script.js"></script>
 </body>
 </html>
