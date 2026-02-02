@@ -7,6 +7,10 @@ const timeSpan = document.getElementById("time");
 const daySpan = document.getElementById("day");
 const valueSpan = document.getElementById("value");
 
+let energy = 0; // langfristiger Energieüberschuss
+const avatar = document.getElementById("avatar");
+const avatarText = document.getElementById("avatar-text");
+
 
 // ===== CHART =====
 const canvas = document.getElementById("chart");
@@ -82,23 +86,31 @@ function nextHour() {
 // ===== BUTTONS =====
 function zucker() {
   blutzucker += 30;
+  energy += 5;
   valueSpan.textContent = blutzucker;
+  updateAvatar();
 }
 
 function mahlzeit() {
   blutzucker += 20;
+  energy += 3;
   valueSpan.textContent = blutzucker;
+  updateAvatar();
 }
 
 function sport() {
   blutzucker -= 25;
+  energy -= 6;
   valueSpan.textContent = blutzucker;
+  updateAvatar();
 }
+
 
 function reset() {
   blutzucker = 90;
   hour = 6;
   day = 1;
+  energy = 0;
 
   data.labels.length = 1;
   data.datasets[0].data.length = 1;
@@ -106,6 +118,25 @@ function reset() {
 
   updateTime();
   valueSpan.textContent = blutzucker;
+  updateAvatar();
   chart.update();
 }
 
+function updateAvatar() {
+  if (energy < -20) {
+    avatar.className = "avatar slim";
+    avatarText.textContent = "Untergewichtig";
+  } 
+  else if (energy < 20) {
+    avatar.className = "avatar normal";
+    avatarText.textContent = "Normalgewicht";
+  } 
+  else if (energy < 60) {
+    avatar.className = "avatar heavy";
+    avatarText.textContent = "Übergewicht";
+  } 
+  else {
+    avatar.className = "avatar obese";
+    avatarText.textContent = "Starkes Übergewicht";
+  }
+}

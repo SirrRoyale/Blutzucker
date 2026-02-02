@@ -89,3 +89,46 @@ canvas {
   width: 100% !important;
   height: 420px !important;
 }
+.avatar-card {
+  margin: 40px auto;
+  padding: 20px;
+  max-width: 400px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 18px;
+  text-align: center;
+}
+
+.avatar-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.avatar {
+  width: 80px;
+  height: 160px;
+  background: #e9ecef;
+  border-radius: 40px;
+  transition: all 0.4s ease;
+}
+
+/* Zustände */
+.avatar.slim {
+  transform: scaleX(0.8);
+  background: #ced4da;
+}
+
+.avatar.normal {
+  transform: scaleX(1);
+  background: #adb5bd;
+}
+
+.avatar.heavy {
+  transform: scaleX(1.25);
+  background: #868e96;
+}
+
+.avatar.obese {
+  transform: scaleX(1.5);
+  background: #495057;
+}
