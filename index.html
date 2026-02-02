@@ -1,1 +1,41 @@
+<body>
+  <div class="app">
 
+    <header>
+      <h1>🩸 Blutzucker-Simulation</h1>
+      <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <div class="stats">
+        <div class="stat">
+          <span>Uhrzeit</span>
+          <strong id="time">06:00</strong>
+        </div>
+        <div class="stat">
+          <span>Blutzucker</span>
+          <strong><span id="value">90</span> mg/dL</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="controls">
+      <button class="btn sugar" onclick="zucker()">🍬 Zucker</button>
+      <button class="btn meal" onclick="mahlzeit()">🍽️ Mahlzeit</button>
+      <button class="btn sport" onclick="sport()">🏃 Sport</button>
+      <button class="btn reset" onclick="reset()">🔄 Reset</button>
+    </section>
+
+    <section class="chart-card">
+      <canvas id="chart"></canvas>
+    </section>
+
+    <section class="time-control">
+      <button class="btn time" onclick="nextHour()">⏩ +1 Stunde</button>
+    </section>
+
+  </div>
+
+  <script src="chart.js"></script>
+<script src="script.js"></script>
+</body>

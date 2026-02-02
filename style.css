@@ -1,1 +1,91 @@
+* {
+  box-sizing: border-box;
+}
 
+body {
+  margin: 0;
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: #fff;
+}
+
+.app {
+  max-width: 1100px;
+  margin: auto;
+  padding: 30px;
+}
+
+/* Header */
+header h1 {
+  margin-bottom: 20px;
+  font-size: 2.4rem;
+  text-align: center;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+}
+
+.stat {
+  background: rgba(255,255,255,0.08);
+  padding: 15px 25px;
+  border-radius: 14px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.stat span {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.stat strong {
+  font-size: 1.6rem;
+}
+
+/* Buttons */
+.controls,
+.time-control {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin: 30px 0;
+}
+
+.btn {
+  border: none;
+  border-radius: 14px;
+  padding: 14px 22px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.15);
+}
+
+.sugar { background: #ff4d6d; color: white; }
+.meal  { background: #ffa94d; color: black; }
+.sport { background: #51cf66; color: black; }
+.reset { background: #adb5bd; color: black; }
+.time  { background: #4dabf7; color: black; }
+
+/* Chart Card */
+.chart-card {
+  background: rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+}
+
+canvas {
+  width: 100% !important;
+  height: 420px !important;
+}
