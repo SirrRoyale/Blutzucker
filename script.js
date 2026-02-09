@@ -157,12 +157,19 @@
     }
 
     checkHealth() {
-      if (this.bg <= CONFIG.DEATH_LOW) {
-        this.die("Hypoglykämischer Schock!");
-      } else if (this.bg >= CONFIG.DEATH_HIGH) {
-        this.die("Ketoazidotisches Koma!");
-      } else if (this.bg <= CONFIG.WARN_LOW) {
+      // Death Thresholds
+      if (this.bg <= 40) {
+        this.die("Hypoglykämischer Schock! (Blutzucker < 40)");
+      } else if (this.bg >= 600) {
+        this.die("Ketoazidotisches Koma! (Blutzucker > 600)");
+      }
+      // Warning Thresholds
+      else if (this.bg <= 70) {
         this.warn("Achtung: Blutzucker niedrig! Bitte essen! 🍎");
+      } else if (this.bg >= 250) {
+        // Maybe a warning for high too?
+        // The requirement says "Nur Warnstatus anzeigen" implies we should warn.
+        this.warn("Achtung: Blutzucker hoch! Insulin benötigt. 💉");
       } else {
         this.clearWarn();
       }
@@ -193,7 +200,15 @@
       const overlay = document.getElementById('deathOverlay');
       const msg = document.getElementById('deathMessage');
       if (overlay && msg) {
-        msg.textContent = reason;
+        // We probably want to keep "GAME OVER" as title and put reason in paragraph?
+        // Or just replace the title? The new HTML has a <p> after h2.
+        // Let's find the paragraph if it exists, otherwise set h2
+        const p = overlay.querySelector('p');
+        if (p) {
+          p.textContent = reason;
+        } else {
+          msg.textContent = reason;
+        }
         overlay.classList.remove('hidden');
       }
     }
@@ -312,27 +327,37 @@
 
       const bgEl = document.getElementById('bgDisplay');
       const statusEl = document.getElementById('healthStatus');
+      const dashboard = document.querySelector('.dashboard-container');
+
+      // Default State
+      let statusText = "OK";
+      let statusClass = "health-status";
+      // Clear previous danger states
+      if (dashboard) {
+        dashboard.classList.remove('state-warning', 'state-critical');
+      }
+
+      const val = Math.round(this.bg);
 
       if (bgEl) {
-        const val = Math.round(this.bg);
         bgEl.textContent = val;
 
-        // Color coding & Status
-        let statusText = "OK";
-        let statusClass = "health-status";
-
+        // Color coding & Status & Dashboard Visuals
         if (val < CONFIG.DEATH_LOW || val > CONFIG.DEATH_HIGH) {
           statusText = "KRITISCH / TOD";
           statusClass += " critical";
           bgEl.style.color = 'var(--danger-color)';
+          if (dashboard) dashboard.classList.add('state-critical');
         } else if (val < CONFIG.WARN_LOW) {
           statusText = "HYPO (NIEDRIG)";
           statusClass += " critical";
           bgEl.style.color = 'var(--danger-color)';
+          if (dashboard) dashboard.classList.add('state-critical');
         } else if (val > CONFIG.WARN_HIGH) {
           statusText = "HYPER (HOCH)";
           statusClass += " warning";
           bgEl.style.color = 'var(--warn-color)';
+          if (dashboard) dashboard.classList.add('state-warning');
         } else {
           bgEl.style.color = 'var(--accent-color)';
         }
@@ -353,6 +378,33 @@
       if (this.chart) {
         this.chart.data.labels = this.history.map(h => h.x);
         this.chart.data.datasets[0].data = this.history.map(h => h.y);
+
+        // Dynamic Y-Axis Scaling
+        // Find max value in history or current BG
+        const maxVal = Math.max(val, ...this.history.map(h => h.y));
+
+        let newMax = 200; // Default (0-200)
+
+        // Logic: Always show at least 200.
+        // If max > 180 (buffer), go to 400.
+        // If max > 380, go to 600.
+        // If max > 580, go to max + buffer.
+
+        if (maxVal > 580) {
+          newMax = Math.ceil((maxVal + 50) / 50) * 50;
+        } else if (maxVal > 380) {
+          newMax = 600;
+        } else if (maxVal > 180) {
+          newMax = 400;
+        } else {
+          newMax = 200;
+        }
+
+        // Apply only if changed to avoid jitter
+        if (this.chart.options.scales.y.max !== newMax) {
+          this.chart.options.scales.y.max = newMax;
+        }
+
         this.chart.update('none'); // 'none' mode for smoother animation in loop
       }
     }
@@ -471,18 +523,26 @@
     const startScreen = document.getElementById('startScreen');
     const dashboard = document.querySelector('.dashboard-container');
     const typeButtons = document.querySelectorAll('.body-type-btn');
+    const bodyTypeDisplay = document.getElementById('bodyTypeDisplay');
 
     typeButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const rate = parseFloat(btn.dataset.rate);
         sim.metabolismRate = rate;
+        const typeName = btn.querySelector('.label').textContent;
+        const icon = btn.querySelector('.icon').textContent;
 
         // Hide overlay
         startScreen.classList.add('hidden');
         dashboard.classList.remove('blur-background');
 
+        // Update Header Display
+        if (bodyTypeDisplay) {
+          bodyTypeDisplay.querySelector('.icon').textContent = icon;
+          bodyTypeDisplay.querySelector('.text').textContent = typeName;
+        }
+
         // Log selection
-        const typeName = btn.querySelector('.label').textContent;
         sim.log(`Simulation gestartet. Körpertyp: ${typeName} (${rate > 0 ? '+' : ''}${rate} mg/dL/h)`);
       });
     });
@@ -501,6 +561,7 @@
 
     if (themeBtn) {
       themeBtn.addEventListener('click', () => {
+        console.log("Theme button clicked");
         isDark = !isDark;
         if (isDark) {
           body.classList.add('dark-mode');

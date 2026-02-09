@@ -54,8 +54,20 @@
         <h1>Blutzucker Sim</h1>
         <p class="subtitle">Interaktives 24h Modell</p>
         <div id="healthStatus" class="health-status">OK</div>
-        <button id="themeToggle" class="theme-btn">🌙/☀️</button>
       </div>
+
+      <!-- New Body Type Display in Header/Stats area -->
+      <div class="header-controls">
+        <div id="bodyTypeDisplay" class="body-type-badge">
+          <span class="icon">?</span>
+          <span class="text">--</span>
+        </div>
+        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
+          <span class="sun">☀️</span>
+          <span class="moon">🌙</span>
+        </button>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <span class="stat-label">Zeit</span>
@@ -79,63 +91,87 @@
       </div>
     </header>
 
-    <!-- Main Chart Section -->
-    <section class="glass-panel chart-panel">
-      <canvas id="bgChart"></canvas>
-      <div id="deathOverlay" class="death-overlay hidden">
-        <h2 id="deathMessage">GAME OVER</h2>
-        <div class="death-controls">
-          <button id="respawnBtn" class="sim-btn">Neustart</button>
-          <button id="reviveBtn" class="sim-btn special">Lebenselixier 🧪 (Weiter)</button>
+    <!-- Main Dashboard Grid (3 Columns on Desktop) -->
+    <div class="dashboard-main-grid">
+
+      <!-- Left Column: Actions -->
+      <div class="side-panel left-panel">
+        <!-- Card 1: Essen -->
+        <div class="control-card">
+          <h3>🍎 Essen</h3>
+          <div class="control-group">
+            <label for="carbsInput">Kohlenhydrate (g)</label>
+            <div class="input-wrapper">
+              <input type="range" id="carbsSlider" min="0" max="100" step="5" value="0">
+              <input type="number" id="carbsInput" min="0" max="200" value="0">
+            </div>
+            <button id="eatBtn" class="action-btn eat">Essen</button>
+          </div>
+        </div>
+
+        <!-- Card 2: Insulin -->
+        <div class="control-card">
+          <h3>💉 Insulin</h3>
+          <div class="control-group">
+            <label for="insulinInput">Insulin (IE)</label>
+            <div class="input-wrapper">
+              <input type="range" id="insulinSlider" min="0" max="20" step="0.5" value="0">
+              <input type="number" id="insulinInput" min="0" max="50" step="0.5" value="0">
+            </div>
+            <button id="injectBtn" class="action-btn inject">Spritzen</button>
+          </div>
+        </div>
+
+        <!-- Card 3: Notfall -->
+        <div class="control-card">
+          <h3>🚑 Notfall</h3>
+          <div class="control-group">
+            <p class="desc-text">Bei schwerer Hypo (&lt;50)</p>
+            <button id="glucagonBtn" class="action-btn glucagon">Glukagon Spritze</button>
+          </div>
         </div>
       </div>
-    </section>
 
-    <!-- Controls Section -->
-    <aside class="glass-panel controls-panel">
-      <h2>Aktionen</h2>
-
-      <div class="control-group">
-        <label for="carbsInput">Kohlenhydrate (g)</label>
-        <div class="input-wrapper">
-          <input type="range" id="carbsSlider" min="0" max="100" step="5" value="0">
-          <input type="number" id="carbsInput" min="0" max="200" value="0">
+      <!-- Center Column: Chart -->
+      <section class="glass-panel chart-panel center-panel">
+        <canvas id="bgChart"></canvas>
+        <div id="deathOverlay" class="death-overlay hidden">
+          <div class="death-card">
+            <h2 id="deathMessage">GAME OVER</h2>
+            <p>Dein Blutzucker ist entgleist.</p>
+            <div class="death-controls">
+              <button id="respawnBtn" class="sim-btn restart-btn">🔄 Neustart</button>
+              <button id="reviveBtn" class="sim-btn revive-btn">🧪 Notfall-Spritze (Revive)</button>
+            </div>
+          </div>
         </div>
-        <button id="eatBtn" class="action-btn eat">Essen</button>
-      </div>
+      </section>
 
-      <div class="control-group">
-        <label for="insulinInput">Insulin (IE)</label>
-        <div class="input-wrapper">
-          <input type="range" id="insulinSlider" min="0" max="20" step="0.5" value="0">
-          <input type="number" id="insulinInput" min="0" max="50" step="0.5" value="0">
+      <!-- Right Column: Controls -->
+      <div class="side-panel right-panel">
+        <!-- Card 4: Steuerung -->
+        <div class="control-card">
+          <h3>⚙️ Steuerung</h3>
+          <div class="simulation-controls">
+            <button id="nextHourBtn" class="sim-btn">Nächste Stunde (+1h)</button>
+            <div class="auto-run-group">
+              <button id="autoRunBtn" class="sim-btn secondary">Auto-Run Starten</button>
+              <input type="range" id="speedSlider" min="10" max="500" value="100" title="Tempo">
+            </div>
+            <button id="resetBtn" class="sim-btn danger">Reset</button>
+          </div>
         </div>
-        <button id="injectBtn" class="action-btn inject">Spritzen</button>
-      </div>
 
-      <div class="control-group">
-        <label>Notfall</label>
-        <button id="glucagonBtn" class="action-btn glucagon">Glukagon Spritze (Hypo)</button>
-      </div>
-
-      <hr class="divider">
-
-      <div class="simulation-controls">
-        <button id="nextHourBtn" class="sim-btn">Nächste Stunde (+1h)</button>
-        <div class="auto-run-group">
-          <button id="autoRunBtn" class="sim-btn secondary">Auto-Run Starten</button>
-          <input type="range" id="speedSlider" min="10" max="500" value="100" title="Tempo">
+        <!-- Card 5: Logbuch -->
+        <div class="control-card log-card">
+          <h3>📝 Logbuch</h3>
+          <ul id="eventLog">
+            <!-- Events will be added here -->
+          </ul>
         </div>
-        <button id="resetBtn" class="sim-btn danger">Reset</button>
       </div>
 
-      <div class="log-section">
-        <h3>Logbuch</h3>
-        <ul id="eventLog">
-          <!-- Events will be added here -->
-        </ul>
-      </div>
-    </aside>
+    </div>
   </div>
 
   <!-- Removed type="module" to allow file:// access and UMD compatibility -->
