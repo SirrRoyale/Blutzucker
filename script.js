@@ -14,8 +14,8 @@
     TIME_STEP: 5,   // Minutes per tick
 
     // Health Limits
-    DEATH_LOW: 30,
-    DEATH_HIGH: 600,
+    DEATH_LOW: 50,
+    DEATH_HIGH: 550,
     WARN_LOW: 70,
     WARN_HIGH: 250
   };
@@ -316,22 +316,18 @@
         bgEl.textContent = val;
 
         // Color coding & Status & Dashboard Visuals
-        if (val < CONFIG.DEATH_LOW || val > CONFIG.DEATH_HIGH) {
-          statusText = "KRITISCH / TOD";
+        if (val < CONFIG.DEATH_LOW || val >= CONFIG.DEATH_HIGH) {
+          statusText = val < CONFIG.DEATH_LOW ? "KRITISCH (HYPO)" : "KRITISCH (HYPER)";
           statusClass += " critical";
           bgEl.style.color = 'var(--danger-color)';
           if (dashboard) dashboard.classList.add('state-critical');
-        } else if (val < CONFIG.WARN_LOW) {
-          statusText = "HYPO (NIEDRIG)";
-          statusClass += " critical";
-          bgEl.style.color = 'var(--danger-color)';
-          if (dashboard) dashboard.classList.add('state-critical');
-        } else if (val > CONFIG.WARN_HIGH) {
-          statusText = "HYPER (HOCH)";
+        } else if (val < CONFIG.WARN_LOW || val > CONFIG.WARN_HIGH) {
+          statusText = val < CONFIG.WARN_LOW ? "NIEDRIG (WARN)" : "HOCH (WARN)";
           statusClass += " warning";
           bgEl.style.color = 'var(--warn-color)';
           if (dashboard) dashboard.classList.add('state-warning');
         } else {
+          statusText = "OK";
           bgEl.style.color = 'var(--accent-color)';
         }
 
@@ -380,10 +376,10 @@
 
         // --- Dynamic Chart Colors ---
         const ds = this.chart.data.datasets[0];
-        if (val >= 550 || val < CONFIG.WARN_LOW) {
+        if (val < CONFIG.DEATH_LOW || val >= CONFIG.DEATH_HIGH) {
           ds.borderColor = '#d50000'; // Red
           ds.backgroundColor = 'rgba(213, 0, 0, 0.2)';
-        } else if (val > CONFIG.WARN_HIGH) {
+        } else if (val < CONFIG.WARN_LOW || val > CONFIG.WARN_HIGH) {
           ds.borderColor = '#ff6d00'; // Orange
           ds.backgroundColor = 'rgba(255, 109, 0, 0.2)';
         } else {
