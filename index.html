@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blutzucker Simulation 2.0</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Using Chart.js 4.x -->
-  <script src="chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script> <!-- Included for zones if possible -->
+  <!-- Using Chart.js 4.x UMD Bundle (No Module) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 </head>
 
 <body>
@@ -86,7 +86,8 @@
     </aside>
   </div>
 
-  <script src="script.js" type="module"></script>
+  <!-- Removed type="module" to allow file:// access and UMD compatibility -->
+  <script src="script.js" defer></script>
 </body>
 
 </html>
