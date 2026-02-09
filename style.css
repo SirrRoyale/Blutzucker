@@ -37,9 +37,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  width: 98vw;
-  /* Utilize almost full width */
-  max-width: 1800px;
+  width: 95%;
+  max-width: 1400px;
   margin: 10px auto;
   padding-bottom: 50px;
 }
@@ -60,17 +59,163 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 25px;
+  padding: 10px 20px;
+  /* Reduced vertical padding */
+  gap: 15px;
+  flex-wrap: nowrap;
+  /* Prevent horizontal growth/brick */
+  overflow: hidden;
 }
 
-/* Main 3-Column Grid */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+.title-section {
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.health-status {
+  min-width: 140px;
+  text-align: center;
+  white-space: nowrap;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(0, 200, 83, 0.15);
+  color: var(--accent-color);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.health-status.warning {
+  background: rgba(255, 145, 0, 0.2);
+  color: var(--warn-color);
+}
+
+.health-status.critical {
+  background: rgba(213, 0, 0, 0.2);
+  color: var(--danger-color);
+  animation: pulse-red-text 1.5s infinite;
+}
+
+@keyframes pulse-red-text {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.4);
+  padding: 5px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+}
+
+body.dark-mode .stat-card {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: #777;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.header-right {
+  display: flex;
+  gap: 15px;
+  flex-grow: 1;
+  justify-content: flex-end;
+  min-width: 0;
+  /* Allow shrinking */
+}
+
+.header-card {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 8px 15px;
+  border: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+body.dark-mode .header-card {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.header-card h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  border-bottom: none;
+  padding-bottom: 0;
+  color: #666;
+}
+
+body.dark-mode .header-card h3 {
+  color: #aaa;
+}
+
+.control-card-small {
+  flex: 0 0 auto;
+  width: 280px;
+  height: 130px;
+  /* Adjusted to show Reset button */
+  overflow: hidden;
+}
+
+.log-card-header {
+  flex: 1;
+  max-width: 500px;
+  height: 130px;
+  /* Reduced as requested */
+  overflow: hidden;
+}
+
+.log-card-header #eventLog {
+  font-size: 0.8rem;
+  max-height: 90px;
+}
+
+/* Main 2-Column Grid */
 .dashboard-main-grid {
   display: grid;
-  /* Fixed-sized panels with a flexible center that can actually shrink */
-  grid-template-columns: 280px minmax(0, 1fr) 280px;
+  /* Left panel fixed, right panel (chart) takes remaining space */
+  grid-template-columns: 320px 1fr;
   gap: 25px;
   align-items: start;
-  /* Top align */
 }
 
 /* Side Panels */
@@ -80,15 +225,14 @@ body {
   gap: 20px;
 }
 
-/* Center Chart Panel */
+/* Center Chart Panel (now Right Panel) */
 .center-panel {
   position: relative;
   width: 100%;
+  max-width: 1000px;
   min-width: 0;
-  /* Crucial for grid-shrink with canvas */
-  height: 600px;
-  /* Taller chart for center focus */
-  /* min-height: 400px; */
+  height: 450px;
+  /* Further reduced for full visibility */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -230,11 +374,13 @@ input[type="number"] {
 .simulation-controls {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
+  /* Condense gap to fit reset button */
 }
 
 .sim-btn {
-  padding: 10px;
+  padding: 8px;
+  /* Slightly smaller padding */
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(0, 0, 0, 0.2);
   color: #333;
@@ -310,6 +456,26 @@ body.dark-mode .desc-text {
 
   .controls-panel {
     overflow: visible;
+  }
+
+  /* Responsive Header */
+  .header-panel {
+    flex-wrap: wrap;
+    justify-content: center;
+    height: auto;
+  }
+
+  .header-left,
+  .header-right {
+    width: 100%;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .log-card-header,
+  .control-card-small {
+    max-width: none;
+    width: 100%;
   }
 
   /* Health Status Mobile */

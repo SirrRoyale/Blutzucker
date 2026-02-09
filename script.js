@@ -65,23 +65,7 @@
     }
   }
 
-  class GlucagonShot {
-    constructor() {
-      // Standard dose, no variable amount for simplicity
-      this.duration = CONFIG.GLUCAGON_DURATION;
-      this.elapsed = 0;
-      this.totalRise = 100; // Emergency shot raises BG significantly (e.g. 100mg/dL)
-    }
 
-    getEffect(minutes) {
-      if (this.elapsed >= this.duration) return 0;
-      // Non-linear absorption?? Let's stick to linear for consistency with others 
-      // or maybe a bit faster? Uniform for now.
-      const effect = this.totalRise * (minutes / this.duration);
-      this.elapsed += minutes;
-      return effect;
-    }
-  }
 
   // --- Main Engine ---
 
@@ -92,7 +76,6 @@
       this.time = { h: 8, m: 0 };
       this.activeBoluses = [];
       this.activeMeals = [];
-      this.activeGlucagon = [];
       this.history = []; // { t: "08:00", bg: 100 }
 
       this.isDead = false;
@@ -125,15 +108,11 @@
       this.activeMeals.forEach(m => rise += m.getEffect(minutes));
       this.bg += rise;
 
-      // 4. Apply Glucagon
-      let gRise = 0;
-      this.activeGlucagon.forEach(g => gRise += g.getEffect(minutes));
-      this.bg += gRise;
+
 
       // 5. Cleanup expired
       this.activeBoluses = this.activeBoluses.filter(b => b.elapsed < b.duration);
       this.activeMeals = this.activeMeals.filter(m => m.elapsed < m.duration);
-      this.activeGlucagon = this.activeGlucagon.filter(g => g.elapsed < g.duration);
 
       // 6. Check Health
       this.checkHealth();
@@ -218,7 +197,6 @@
       this.bg = 100; // Reset to safe value
       this.activeBoluses = []; // Clear active insulin
       this.activeMeals = [];   // Clear active food
-      this.activeGlucagon = []; // Clear active glucagon
 
       const overlay = document.getElementById('deathOverlay');
       if (overlay) {
@@ -241,12 +219,7 @@
       this.log(`Essen: ${grams}g Kohlenhydrate`);
     }
 
-    addGlucagon() {
-      if (this.isDead) return;
-      this.activeGlucagon.push(new GlucagonShot());
-      this.log(`GLUKAGON NOTFALL-SPRITZE!`);
-      this.updateUI();
-    }
+
 
     run(hours) {
       if (this.isDead) return;
@@ -403,6 +376,19 @@
         // Apply only if changed to avoid jitter
         if (this.chart.options.scales.y.max !== newMax) {
           this.chart.options.scales.y.max = newMax;
+        }
+
+        // --- Dynamic Chart Colors ---
+        const ds = this.chart.data.datasets[0];
+        if (val >= 550 || val < CONFIG.WARN_LOW) {
+          ds.borderColor = '#d50000'; // Red
+          ds.backgroundColor = 'rgba(213, 0, 0, 0.2)';
+        } else if (val > CONFIG.WARN_HIGH) {
+          ds.borderColor = '#ff6d00'; // Orange
+          ds.backgroundColor = 'rgba(255, 109, 0, 0.2)';
+        } else {
+          ds.borderColor = '#00c853'; // Green
+          ds.backgroundColor = 'rgba(0, 200, 83, 0.2)';
         }
 
         this.chart.update('none'); // 'none' mode for smoother animation in loop
@@ -604,12 +590,7 @@
       });
     }
 
-    const glucagonBtn = document.getElementById('glucagonBtn');
-    if (glucagonBtn) {
-      glucagonBtn.addEventListener('click', () => {
-        sim.addGlucagon();
-      });
-    }
+
 
     const nextHourBtn = document.getElementById('nextHourBtn');
     if (nextHourBtn) {

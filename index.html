@@ -48,50 +48,74 @@
   </div>
 
   <div class="dashboard-container blur-background">
-    <!-- Header Section: Stats & Time -->
+    <!-- Header Section: Stats & Time & Controls & Log -->
     <header class="glass-panel header-panel">
-      <div class="title-section">
-        <h1>Blutzucker Sim</h1>
-        <p class="subtitle">Interaktives 24h Modell</p>
-        <div id="healthStatus" class="health-status">OK</div>
+      <div class="header-left">
+        <div class="title-section">
+          <h1>Blutzucker Sim</h1>
+          <p class="subtitle">Interaktives 24h Modell</p>
+          <div id="healthStatus" class="health-status">OK</div>
+        </div>
+
+        <div class="header-controls">
+          <div id="bodyTypeDisplay" class="body-type-badge">
+            <span class="icon">?</span>
+            <span class="text">--</span>
+          </div>
+          <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
+            <span class="sun">☀️</span>
+            <span class="moon">🌙</span>
+          </button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Zeit</span>
+            <span class="stat-value" id="timeDisplay">08:00</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Blutzucker</span>
+            <span class="stat-value" id="bgDisplay">--</span>
+            <span class="stat-unit">mg/dL</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">IOB</span>
+            <span class="stat-value" id="iobDisplay">0.0</span>
+            <span class="stat-unit">IE</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">COB</span>
+            <span class="stat-value" id="cobDisplay">0</span>
+            <span class="stat-unit">g</span>
+          </div>
+        </div>
       </div>
 
-      <!-- New Body Type Display in Header/Stats area -->
-      <div class="header-controls">
-        <div id="bodyTypeDisplay" class="body-type-badge">
-          <span class="icon">?</span>
-          <span class="text">--</span>
+      <div class="header-right">
+        <!-- Card: Steuerung -->
+        <div class="header-card control-card-small">
+          <h3>⚙️ Steuerung</h3>
+          <div class="simulation-controls">
+            <button id="nextHourBtn" class="sim-btn">Next Hour (+1h)</button>
+            <div class="auto-run-group">
+              <button id="autoRunBtn" class="sim-btn secondary">Auto-Run</button>
+              <input type="range" id="speedSlider" min="10" max="500" value="100" title="Tempo">
+            </div>
+            <button id="resetBtn" class="sim-btn danger">Reset</button>
+          </div>
         </div>
-        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
-          <span class="sun">☀️</span>
-          <span class="moon">🌙</span>
-        </button>
-      </div>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-label">Zeit</span>
-          <span class="stat-value" id="timeDisplay">08:00</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Blutzucker</span>
-          <span class="stat-value" id="bgDisplay">--</span>
-          <span class="stat-unit">mg/dL</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">IOB</span>
-          <span class="stat-value" id="iobDisplay">0.0</span>
-          <span class="stat-unit">IE</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">COB</span>
-          <span class="stat-value" id="cobDisplay">0</span>
-          <span class="stat-unit">g</span>
+        <!-- Card: Logbuch -->
+        <div class="header-card log-card-header">
+          <h3>📝 Logbuch</h3>
+          <ul id="eventLog">
+            <!-- Events will be added here -->
+          </ul>
         </div>
       </div>
     </header>
 
-    <!-- Main Dashboard Grid (3 Columns on Desktop) -->
+    <!-- Main Dashboard Grid (2 Columns on Desktop) -->
     <div class="dashboard-main-grid">
 
       <!-- Left Column: Actions -->
@@ -121,18 +145,9 @@
             <button id="injectBtn" class="action-btn inject">Spritzen</button>
           </div>
         </div>
-
-        <!-- Card 3: Notfall -->
-        <div class="control-card">
-          <h3>🚑 Notfall</h3>
-          <div class="control-group">
-            <p class="desc-text">Bei schwerer Hypo (&lt;50)</p>
-            <button id="glucagonBtn" class="action-btn glucagon">Glukagon Spritze</button>
-          </div>
-        </div>
       </div>
 
-      <!-- Center Column: Chart -->
+      <!-- Right Column: Chart -->
       <section class="glass-panel chart-panel center-panel">
         <canvas id="bgChart"></canvas>
         <div id="deathOverlay" class="death-overlay hidden">
@@ -146,30 +161,6 @@
           </div>
         </div>
       </section>
-
-      <!-- Right Column: Controls -->
-      <div class="side-panel right-panel">
-        <!-- Card 4: Steuerung -->
-        <div class="control-card">
-          <h3>⚙️ Steuerung</h3>
-          <div class="simulation-controls">
-            <button id="nextHourBtn" class="sim-btn">Nächste Stunde (+1h)</button>
-            <div class="auto-run-group">
-              <button id="autoRunBtn" class="sim-btn secondary">Auto-Run Starten</button>
-              <input type="range" id="speedSlider" min="10" max="500" value="100" title="Tempo">
-            </div>
-            <button id="resetBtn" class="sim-btn danger">Reset</button>
-          </div>
-        </div>
-
-        <!-- Card 5: Logbuch -->
-        <div class="control-card log-card">
-          <h3>📝 Logbuch</h3>
-          <ul id="eventLog">
-            <!-- Events will be added here -->
-          </ul>
-        </div>
-      </div>
 
     </div>
   </div>
