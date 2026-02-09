@@ -12,7 +12,42 @@
 </head>
 
 <body>
-  <div class="dashboard-container">
+  <!-- Start Screen Overlay -->
+  <div id="startScreen" class="start-overlay">
+    <div class="glass-panel start-card">
+      <h1>Willkommen zur Blutzucker Sim 2.0</h1>
+      <p>Bitte wähle deinen Körpertyp für die Simulation:</p>
+      <div class="body-type-grid">
+        <button class="body-type-btn" data-type="sporty" data-rate="-5">
+          <span class="icon">🏃</span>
+          <span class="label">Sportlich</span>
+          <span class="detail">-5 mg/dL pro Std.</span>
+        </button>
+        <button class="body-type-btn" data-type="healthy" data-rate="-3">
+          <span class="icon">🥗</span>
+          <span class="label">Gesund</span>
+          <span class="detail">-3 mg/dL pro Std.</span>
+        </button>
+        <button class="body-type-btn" data-type="overweight" data-rate="-1.5">
+          <span class="icon">🍔</span>
+          <span class="label">Übergewichtig</span>
+          <span class="detail">-1.5 mg/dL pro Std.</span>
+        </button>
+        <button class="body-type-btn" data-type="t2" data-rate="-1">
+          <span class="icon">💊</span>
+          <span class="label">Diabetes Typ 2</span>
+          <span class="detail">-1 mg/dL pro Std.</span>
+        </button>
+        <button class="body-type-btn" data-type="t1" data-rate="2">
+          <span class="icon">💉</span>
+          <span class="label">Diabetes Typ 1</span>
+          <span class="detail">+2 mg/dL pro Std.</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-container blur-background">
     <!-- Header Section: Stats & Time -->
     <header class="glass-panel header-panel">
       <div class="title-section">

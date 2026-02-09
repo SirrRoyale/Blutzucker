@@ -5,7 +5,7 @@
     ISF: 40,        // Insulin Sensitivity Factor: 1 Unit drops BG by 40 mg/dL
     ICR: 10,        // Insulin-to-Carb Ratio: 1 Unit covers 10g Carbs
     BASAL: 0,       // Basal rate (Units/hr)
-    METABOLISM: 10,  // Natural drop in BG per hour (mg/dL) - replaces LIVER_OUTPUT
+    // METABOLISM REMOVED - Set by Body Type
     INSULIN_DURATION: 240, // 4 hours in minutes
     CARB_DURATION: 180,    // 3 hours in minutes
     GLUCAGON_DURATION: 90, // 1.5 hours in minutes
@@ -88,6 +88,7 @@
   class Simulation {
     constructor() {
       this.bg = 100;
+      this.metabolismRate = 0; // Set by selection
       this.time = { h: 8, m: 0 };
       this.activeBoluses = [];
       this.activeMeals = [];
@@ -106,9 +107,13 @@
     tick(minutes) {
       if (this.isDead) return;
 
-      // 1. Apply Metabolism (Natural Drop)
-      const metabolismEffect = (CONFIG.METABOLISM / 60) * minutes;
-      this.bg -= metabolismEffect; // Drops over time
+      // 1. Apply Metabolism (Natural Drop or Rise based on body type)
+      // metabolismRate is per hour.
+      // If negative (drop), we subtract. If positive (rise), we still add it (subtraction of negative is addition?)
+      // Wait, let's keep it simple: rate is "Change per hour". 
+      // So BG += (Rate / 60 * minutes)
+      const metabolismEffect = (this.metabolismRate / 60) * minutes;
+      this.bg += metabolismEffect;
 
       // 2. Apply Boluses (Insulin drops BG)
       let drop = 0;
@@ -462,6 +467,26 @@
   document.addEventListener('DOMContentLoaded', () => {
     const sim = new Simulation();
 
+    // --- Start Screen Logic ---
+    const startScreen = document.getElementById('startScreen');
+    const dashboard = document.querySelector('.dashboard-container');
+    const typeButtons = document.querySelectorAll('.body-type-btn');
+
+    typeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rate = parseFloat(btn.dataset.rate);
+        sim.metabolismRate = rate;
+
+        // Hide overlay
+        startScreen.classList.add('hidden');
+        dashboard.classList.remove('blur-background');
+
+        // Log selection
+        const typeName = btn.querySelector('.label').textContent;
+        sim.log(`Simulation gestartet. Körpertyp: ${typeName} (${rate > 0 ? '+' : ''}${rate} mg/dL/h)`);
+      });
+    });
+
     // --- Theme Logic ---
     const themeBtn = document.getElementById('themeToggle');
     const body = document.body;
@@ -472,6 +497,7 @@
       body.classList.add('dark-mode');
       sim.updateChartTheme(true);
     }
+
 
     if (themeBtn) {
       themeBtn.addEventListener('click', () => {

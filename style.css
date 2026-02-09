@@ -455,3 +455,116 @@ body.dark-mode .log-time {
 body.dark-mode #eventLog li {
   border-bottom-color: rgba(255, 255, 255, 0.1);
 }
+
+/* Start Screen Overlay */
+.start-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(230, 240, 255, 0.8);
+  backdrop-filter: blur(15px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.5s ease-out;
+}
+
+body.dark-mode .start-overlay {
+  background: rgba(20, 20, 20, 0.9);
+}
+
+.start-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.start-card {
+  max-width: 800px;
+  width: 90%;
+  text-align: center;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .start-card {
+  background: rgba(30, 30, 30, 0.95);
+}
+
+.start-card h1 {
+  margin-top: 0;
+  font-size: 2.5rem;
+  background: linear-gradient(45deg, #00c853, #00e676);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 20px;
+}
+
+.start-card p {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 30px;
+}
+
+body.dark-mode .start-card p {
+  color: #aaa;
+}
+
+.body-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 15px;
+}
+
+.body-type-btn {
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+body.dark-mode .body-type-btn {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.body-type-btn:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent-color);
+}
+
+.body-type-btn .icon {
+  font-size: 2.5rem;
+}
+
+.body-type-btn .label {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #333;
+}
+
+body.dark-mode .body-type-btn .label {
+  color: #e0e0e0;
+}
+
+.body-type-btn .detail {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+/* Blur effect for dashboard when behind overlay */
+.dashboard-container.blur-background {
+  filter: blur(5px);
+  pointer-events: none;
+}
