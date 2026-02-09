@@ -20,10 +20,10 @@
     WARN_HIGH: 250
   };
 
-  // --- Chart Global Defaults for Dark Mode ---
+  // --- Chart Global Defaults for Light Mode ---
   if (window.Chart) {
-    Chart.defaults.color = '#e0e0e0';
-    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+    Chart.defaults.color = '#444'; // Dark text
+    Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.1)'; // Light borders
   }
 
   // --- Helper Classes ---
@@ -385,8 +385,8 @@
           datasets: [{
             label: 'Blutzucker (mg/dL)',
             data: [this.bg],
-            borderColor: '#00e676',
-            backgroundColor: 'rgba(0, 230, 118, 0.1)',
+            borderColor: '#00c853', // Match new accent
+            backgroundColor: 'rgba(0, 200, 83, 0.2)', // Slightly stronger fill
             borderWidth: 2,
             fill: true,
             tension: 0.4,
@@ -402,12 +402,12 @@
             y: {
               min: 0,
               max: 400, // Look above 400 allows seeing high spikes
-              grid: { color: 'rgba(255,255,255,0.1)' },
-              ticks: { color: '#aaa' },
+              grid: { color: 'rgba(0,0,0,0.05)' }, // Light dark grid
+              ticks: { color: '#666' },
             },
             x: {
-              grid: { color: 'rgba(255,255,255,0.05)' },
-              ticks: { color: '#aaa', maxTicksLimit: 8 }
+              grid: { color: 'rgba(0,0,0,0.05)' },
+              ticks: { color: '#666', maxTicksLimit: 8 }
             }
           },
           plugins: plugins

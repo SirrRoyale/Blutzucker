@@ -1,21 +1,22 @@
 :root {
-  --bg-color: #121212;
-  --text-color: #e0e0e0;
-  --accent-color: #00e676;
-  /* Green for good */
-  --danger-color: #ff1744;
-  /* Red for bad/danger */
-  --warn-color: #ff9100;
-  /* Orange for warning */
-  --panel-bg: rgba(255, 255, 255, 0.05);
-  --panel-border: rgba(255, 255, 255, 0.1);
+  --bg-color: #f0f2f5;
+  --text-color: #333333;
+  --accent-color: #00c853;
+  /* Darker green for visibility on light */
+  --danger-color: #d50000;
+  /* Darker red */
+  --warn-color: #ff6d00;
+  --panel-bg: rgba(255, 255, 255, 0.7);
+  /* Light glass */
+  --panel-border: rgba(0, 0, 0, 0.1);
   --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background: radial-gradient(circle at top left, #1a237e, #000000 60%);
+  background: linear-gradient(135deg, #e3f2fd, #f5f5f5);
+  /* Light Blue/Grey */
   color: var(--text-color);
   font-family: var(--font-family);
   height: 100vh;
@@ -61,7 +62,7 @@ body {
 .title-section h1 {
   margin: 0;
   font-size: 1.5rem;
-  color: #fff;
+  color: #222;
 }
 
 .title-section .subtitle {
@@ -84,14 +85,14 @@ body {
 .stat-label {
   font-size: 0.8rem;
   text-transform: uppercase;
-  color: #aaa;
+  color: #666;
   letter-spacing: 1px;
 }
 
 .stat-value {
   font-size: 1.8rem;
   font-weight: bold;
-  color: #fff;
+  color: #222;
 }
 
 .stat-unit {
@@ -148,11 +149,12 @@ input[type="range"] {
 input[type="number"] {
   width: 60px;
   padding: 5px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.8);
   border: 1px solid var(--panel-border);
-  color: #fff;
+  color: #333;
   border-radius: 4px;
   text-align: center;
+  font-weight: bold;
 }
 
 .action-btn {
@@ -193,9 +195,9 @@ input[type="number"] {
 
 .sim-btn {
   padding: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--panel-border);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #333;
   cursor: pointer;
   border-radius: 8px;
   transition: background 0.2s;
@@ -233,13 +235,13 @@ input[type="number"] {
   overflow-y: auto;
   flex-grow: 1;
   font-size: 0.85rem;
-  color: #ccc;
+  color: #555;
   max-height: 200px;
 }
 
 #eventLog li {
   padding: 4px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .log-time {
@@ -316,17 +318,20 @@ input[type="number"] {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(255, 255, 255, 0.9);
+    /* Light Death Screen */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 10;
+    z-index: 100;
+    /* Boost Z-Index */
     backdrop-filter: blur(5px);
   }
 
   .death-overlay.hidden {
-    display: none;
+    display: none !important;
+    /* Force hide */
   }
 
   .death-overlay h2 {
