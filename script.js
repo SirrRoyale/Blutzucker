@@ -11,6 +11,12 @@ const CONFIG = {
   TIME_STEP: 5,   // Minutes per tick
 };
 
+// --- Chart Global Defaults for Dark Mode ---
+if (window.Chart) {
+  Chart.defaults.color = '#e0e0e0';
+  Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+}
+
 // --- Helper Classes ---
 
 class Bolus {
@@ -21,21 +27,14 @@ class Bolus {
     this.elapsed = 0;
   }
 
-  // Returns the amount of insulin "active" (reducing BG) in this time step
-  // Linear decay model: The 'power' is constant if we assume linear IOB decay?
-  // Actually, "Activity" is the derivative of IOB.
-  // If IOB decays linearly from 100% to 0% over 4 hours, the activity (rate of drop) is constant.
-  // Rate = Total_Effect / Duration
-  // Total Effect = Amount * ISF
-  // Effect per minute = (Amount * ISF) / Duration
+  // Returns the drop in BG for this time step (Activity)
   getEffect(minutes) {
     if (this.elapsed >= this.duration) return 0;
 
-    // This calculates how much IS_ACTIVE insulin is removed from the "stack" 
-    // AND how much effect it has on BG.
-
-    // Let's stick to the "Activity" model.
-    // Drop in BG = (Amount * ISF) * (minutes / duration)
+    // Activity = (Total Effect) / Duration * (step / duration_unit_time correction?)
+    // Total Effect = Amount * ISF
+    // Rate per minute = Total Effect / Duration
+    // Effect this step = Rate * minutes
     const effect = (this.initialAmount * CONFIG.ISF) * (minutes / this.duration);
 
     this.elapsed += minutes;
@@ -53,14 +52,11 @@ class Meal {
     this.elapsed = 0;
   }
 
+  // Returns the rise in BG for this time step
   getEffect(minutes) {
     if (this.elapsed >= this.duration) return 0;
 
-    // Rise in BG = (Carbs / ICR) * ISF ... Wait, that's deriving from Insulin.
-    // Let's formulate: 10g carbs raises BG by how much?
-    // If 1u (covers 10g) drops 40mg/dL, then 10g carbs raises 40mg/dL.
-    // So Rise Factor = ISF / ICR (= 4 mg/dL per g)
-
+    // Rise Factor = ISF / ICR
     const riseFactor = CONFIG.ISF / CONFIG.ICR;
     const totalRise = this.initialCarbs * riseFactor;
 
@@ -89,9 +85,7 @@ class Simulation {
 
   // Time Management
   tick(minutes) {
-    // 1. Apply Basal / Liver
-    // Net change if Basal = 0 and Liver = 10/hr is +10/hr
-    // If we had basal, it would be: Liver - (Basal * ISF)
+    // 1. Apply Basal / Liver (Net effect +)
     const liverEffect = (CONFIG.LIVER_OUTPUT / 60) * minutes;
     this.bg += liverEffect;
 
@@ -120,10 +114,11 @@ class Simulation {
     // 6. Record History
     this.history.push({
       x: this.formatTime(),
-      y: Math.max(20, Math.round(this.bg)) // floor at 20 (coma)
+      y: Math.max(20, Math.round(this.bg)) // floor at 20
     });
 
-    if (this.history.length > 288) this.history.shift(); // Keep last 24h (288 * 5min)
+    // Keep last 24h (288 * 5min = 1440 min)
+    if (this.history.length > 288) this.history.shift();
   }
 
   addInsulin(units) {
@@ -161,6 +156,7 @@ class Simulation {
 
   log(msg) {
     const logList = document.getElementById('eventLog');
+    if (!logList) return;
     const li = document.createElement('li');
     li.innerHTML = `<span class="log-time">${this.formatTime()}</span> ${msg}`;
     logList.prepend(li); // Newest top
@@ -168,21 +164,30 @@ class Simulation {
 
   updateUI() {
     // Update Text
-    document.getElementById('timeDisplay').textContent = this.formatTime();
-    document.getElementById('bgDisplay').textContent = Math.round(this.bg);
-    document.getElementById('iobDisplay').textContent = this.getIOB();
-    document.getElementById('cobDisplay').textContent = this.getCOB();
+    const timeEl = document.getElementById('timeDisplay');
+    if (timeEl) timeEl.textContent = this.formatTime();
 
-    // Color coding
-    const bgVal = document.getElementById('bgDisplay');
-    if (this.bg < 70) bgVal.style.color = 'var(--danger-color)';
-    else if (this.bg > 180) bgVal.style.color = 'var(--warn-color)';
-    else bgVal.style.color = 'var(--accent-color)';
+    const bgEl = document.getElementById('bgDisplay');
+    if (bgEl) {
+      bgEl.textContent = Math.round(this.bg);
+      // Color coding
+      if (this.bg < 70) bgEl.style.color = 'var(--danger-color)';
+      else if (this.bg > 180) bgEl.style.color = 'var(--warn-color)';
+      else bgEl.style.color = 'var(--accent-color)';
+    }
+
+    const iobEl = document.getElementById('iobDisplay');
+    if (iobEl) iobEl.textContent = this.getIOB();
+
+    const cobEl = document.getElementById('cobDisplay');
+    if (cobEl) cobEl.textContent = this.getCOB();
 
     // Update Chart
-    this.chart.data.labels = this.history.map(h => h.x);
-    this.chart.data.datasets[0].data = this.history.map(h => h.y);
-    this.chart.update();
+    if (this.chart) {
+      this.chart.data.labels = this.history.map(h => h.x);
+      this.chart.data.datasets[0].data = this.history.map(h => h.y);
+      this.chart.update();
+    }
   }
 
   initChart() {
@@ -190,6 +195,34 @@ class Simulation {
 
     // Initial Data
     this.history.push({ x: this.formatTime(), y: this.bg });
+
+    const annotationPlugin = window['chartjs-plugin-annotation'];
+    const plugins = { legend: { display: false } };
+
+    if (annotationPlugin) {
+      plugins.annotation = {
+        annotations: {
+          low: {
+            type: 'line',
+            yMin: 70,
+            yMax: 70,
+            borderColor: 'rgba(255, 23, 68, 0.5)',
+            borderWidth: 1,
+            borderDash: [5, 5],
+            label: { content: 'Low', enabled: true, color: 'red', position: 'start' }
+          },
+          high: {
+            type: 'line',
+            yMin: 180,
+            yMax: 180,
+            borderColor: 'rgba(255, 145, 0, 0.5)',
+            borderWidth: 1,
+            borderDash: [5, 5],
+            label: { content: 'High', enabled: true, color: 'orange', position: 'start' }
+          }
+        }
+      };
+    }
 
     this.chart = new Chart(ctx, {
       type: 'line',
@@ -215,37 +248,13 @@ class Simulation {
             max: 350,
             grid: { color: 'rgba(255,255,255,0.1)' },
             ticks: { color: '#aaa' },
-
           },
           x: {
             grid: { color: 'rgba(255,255,255,0.05)' },
             ticks: { color: '#aaa', maxTicksLimit: 8 }
           }
         },
-        plugins: {
-          legend: { display: false },
-          annotation: {
-            annotations: {
-              low: {
-                type: 'line',
-                yMin: 70,
-                yMax: 70,
-                borderColor: 'rgba(255, 23, 68, 0.5)',
-                borderWidth: 1,
-                borderDash: [5, 5],
-                label: { content: 'Low', enabled: true, color: 'red' }
-              },
-              high: {
-                type: 'line',
-                yMin: 180,
-                yMax: 180,
-                borderColor: 'rgba(255, 145, 0, 0.5)',
-                borderWidth: 1,
-                borderDash: [5, 5]
-              }
-            }
-          }
-        }
+        plugins: plugins
       }
     });
   }
@@ -260,6 +269,8 @@ const sim = new Simulation();
 function sync(id1, id2) {
   const el1 = document.getElementById(id1);
   const el2 = document.getElementById(id2);
+  if (!el1 || !el2) return;
+
   el1.addEventListener('input', () => el2.value = el1.value);
   el2.addEventListener('input', () => el1.value = el2.value);
 }
@@ -267,27 +278,41 @@ function sync(id1, id2) {
 sync('carbsSlider', 'carbsInput');
 sync('insulinSlider', 'insulinInput');
 
-document.getElementById('eatBtn').addEventListener('click', () => {
-  const carbs = parseFloat(document.getElementById('carbsInput').value);
-  sim.addCarbs(carbs);
-  sim.updateUI(); // Immediate UI update (stats), effect comes with ticks
-});
+const eatBtn = document.getElementById('eatBtn');
+if (eatBtn) {
+  eatBtn.addEventListener('click', () => {
+    const carbs = parseFloat(document.getElementById('carbsInput').value);
+    sim.addCarbs(carbs);
+    sim.updateUI();
+  });
+}
 
-document.getElementById('injectBtn').addEventListener('click', () => {
-  const units = parseFloat(document.getElementById('insulinInput').value);
-  sim.addInsulin(units);
-  sim.updateUI();
-});
+const injectBtn = document.getElementById('injectBtn');
+if (injectBtn) {
+  injectBtn.addEventListener('click', () => {
+    const units = parseFloat(document.getElementById('insulinInput').value);
+    sim.addInsulin(units);
+    sim.updateUI();
+  });
+}
 
-document.getElementById('nextHourBtn').addEventListener('click', () => {
-  sim.run(1); // 1 hour
-});
+const nextHourBtn = document.getElementById('nextHourBtn');
+if (nextHourBtn) {
+  nextHourBtn.addEventListener('click', () => {
+    sim.run(1); // 1 hour
+  });
+}
 
-document.getElementById('runDayBtn').addEventListener('click', () => {
-  // Run until midnight? Or just 6 hours? Let's do 6 hours.
-  sim.run(6);
-});
+const runDayBtn = document.getElementById('runDayBtn');
+if (runDayBtn) {
+  runDayBtn.addEventListener('click', () => {
+    sim.run(6); // 6 hours
+  });
+}
 
-document.getElementById('resetBtn').addEventListener('click', () => {
-  window.location.reload();
-});
+const resetBtn = document.getElementById('resetBtn');
+if (resetBtn) {
+  resetBtn.addEventListener('click', () => {
+    window.location.reload();
+  });
+}
