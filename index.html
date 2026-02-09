@@ -18,6 +18,7 @@
       <div class="title-section">
         <h1>Blutzucker Sim</h1>
         <p class="subtitle">Interaktives 24h Modell</p>
+        <div id="healthStatus" class="health-status">OK</div>
       </div>
       <div class="stats-grid">
         <div class="stat-card">
@@ -45,6 +46,10 @@
     <!-- Main Chart Section -->
     <section class="glass-panel chart-panel">
       <canvas id="bgChart"></canvas>
+      <div id="deathOverlay" class="death-overlay hidden">
+        <h2 id="deathMessage">GAME OVER</h2>
+        <button id="respawnBtn" class="sim-btn">Neustart</button>
+      </div>
     </section>
 
     <!-- Controls Section -->
@@ -69,11 +74,19 @@
         <button id="injectBtn" class="action-btn inject">Spritzen</button>
       </div>
 
+      <div class="control-group">
+        <label>Notfall</label>
+        <button id="glucagonBtn" class="action-btn glucagon">Glukagon Spritze (Hypo)</button>
+      </div>
+
       <hr class="divider">
 
       <div class="simulation-controls">
         <button id="nextHourBtn" class="sim-btn">Nächste Stunde (+1h)</button>
-        <button id="runDayBtn" class="sim-btn secondary">Auto-Run (Rest des Tages)</button>
+        <div class="auto-run-group">
+          <button id="autoRunBtn" class="sim-btn secondary">Auto-Run Starten</button>
+          <input type="range" id="speedSlider" min="10" max="500" value="100" title="Tempo">
+        </div>
         <button id="resetBtn" class="sim-btn danger">Reset</button>
       </div>
 

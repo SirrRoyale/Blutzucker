@@ -8,8 +8,16 @@
     LIVER_OUTPUT: 10, // Liver produces glucose raising BG by 10 mg/dL per hour (counteracts Basal)
     INSULIN_DURATION: 240, // 4 hours in minutes
     CARB_DURATION: 180,    // 3 hours in minutes
+    GLUCAGON_DURATION: 90, // 1.5 hours in minutes
+    GLUCAGON_RISE: 50,     // 1mg Glucagon raises BG by approx 50-100mg/dL? Let's say 30mg/dL per "dose" (simulated unit)
     TARGET_BG: 100,
     TIME_STEP: 5,   // Minutes per tick
+
+    // Health Limits
+    DEATH_LOW: 30,
+    DEATH_HIGH: 600,
+    WARN_LOW: 70,
+    WARN_HIGH: 250
   };
 
   // --- Chart Global Defaults for Dark Mode ---
@@ -28,19 +36,12 @@
       this.elapsed = 0;
     }
 
-    // Returns the drop in BG for this time step (Activity)
     getEffect(minutes) {
       if (this.elapsed >= this.duration) return 0;
-
-      // Activity = (Total Effect) / Duration * (step / duration_unit_time correction?)
-      // Total Effect = Amount * ISF
-      // Rate per minute = Total Effect / Duration
-      // Effect this step = Rate * minutes
+      // Effect = Drop in BG
       const effect = (this.initialAmount * CONFIG.ISF) * (minutes / this.duration);
-
       this.elapsed += minutes;
       this.amount = Math.max(0, this.initialAmount * (1 - (this.elapsed / this.duration)));
-
       return effect;
     }
   }
@@ -53,19 +54,31 @@
       this.elapsed = 0;
     }
 
-    // Returns the rise in BG for this time step
     getEffect(minutes) {
       if (this.elapsed >= this.duration) return 0;
-
-      // Rise Factor = ISF / ICR
       const riseFactor = CONFIG.ISF / CONFIG.ICR;
       const totalRise = this.initialCarbs * riseFactor;
-
       const effect = totalRise * (minutes / this.duration);
-
       this.elapsed += minutes;
       this.carbs = Math.max(0, this.initialCarbs * (1 - (this.elapsed / this.duration)));
+      return effect;
+    }
+  }
 
+  class GlucagonShot {
+    constructor() {
+      // Standard dose, no variable amount for simplicity
+      this.duration = CONFIG.GLUCAGON_DURATION;
+      this.elapsed = 0;
+      this.totalRise = 100; // Emergency shot raises BG significantly (e.g. 100mg/dL)
+    }
+
+    getEffect(minutes) {
+      if (this.elapsed >= this.duration) return 0;
+      // Non-linear absorption?? Let's stick to linear for consistency with others 
+      // or maybe a bit faster? Uniform for now.
+      const effect = this.totalRise * (minutes / this.duration);
+      this.elapsed += minutes;
       return effect;
     }
   }
@@ -78,7 +91,12 @@
       this.time = { h: 8, m: 0 };
       this.activeBoluses = [];
       this.activeMeals = [];
+      this.activeGlucagon = [];
       this.history = []; // { t: "08:00", bg: 100 }
+
+      this.isDead = false;
+      this.autoRunInterval = null;
+      this.autoRunSpeed = 100;
 
       this.initChart();
       this.updateUI();
@@ -86,6 +104,8 @@
 
     // Time Management
     tick(minutes) {
+      if (this.isDead) return;
+
       // 1. Apply Basal / Liver (Net effect +)
       const liverEffect = (CONFIG.LIVER_OUTPUT / 60) * minutes;
       this.bg += liverEffect;
@@ -100,11 +120,20 @@
       this.activeMeals.forEach(m => rise += m.getEffect(minutes));
       this.bg += rise;
 
-      // 4. Cleanup expired
+      // 4. Apply Glucagon
+      let gRise = 0;
+      this.activeGlucagon.forEach(g => gRise += g.getEffect(minutes));
+      this.bg += gRise;
+
+      // 5. Cleanup expired
       this.activeBoluses = this.activeBoluses.filter(b => b.elapsed < b.duration);
       this.activeMeals = this.activeMeals.filter(m => m.elapsed < m.duration);
+      this.activeGlucagon = this.activeGlucagon.filter(g => g.elapsed < g.duration);
 
-      // 5. Advance Time
+      // 6. Check Health
+      this.checkHealth();
+
+      // 7. Advance Time
       this.time.m += minutes;
       if (this.time.m >= 60) {
         this.time.h += Math.floor(this.time.m / 60);
@@ -112,34 +141,104 @@
       }
       if (this.time.h >= 24) this.time.h %= 24;
 
-      // 6. Record History
+      // 8. Record History
       this.history.push({
         x: this.formatTime(),
-        y: Math.max(20, Math.round(this.bg)) // floor at 20
+        y: Math.round(this.bg)
       });
 
       // Keep last 24h (288 * 5min = 1440 min)
       if (this.history.length > 288) this.history.shift();
     }
 
+    checkHealth() {
+      if (this.bg <= CONFIG.DEATH_LOW) {
+        this.die("Hypoglykämischer Schock!");
+      } else if (this.bg >= CONFIG.DEATH_HIGH) {
+        this.die("Ketoazidotisches Koma!");
+      }
+    }
+
+    die(reason) {
+      this.isDead = true;
+      this.stopAutoRun();
+
+      const overlay = document.getElementById('deathOverlay');
+      const msg = document.getElementById('deathMessage');
+      if (overlay && msg) {
+        msg.textContent = reason;
+        overlay.classList.remove('hidden');
+      }
+    }
+
     addInsulin(units) {
-      if (units <= 0) return;
+      if (units <= 0 || this.isDead) return;
       this.activeBoluses.push(new Bolus(units));
       this.log(`Spritze: ${units} IE`);
     }
 
     addCarbs(grams) {
-      if (grams <= 0) return;
+      if (grams <= 0 || this.isDead) return;
       this.activeMeals.push(new Meal(grams));
       this.log(`Essen: ${grams}g Kohlenhydrate`);
     }
 
+    addGlucagon() {
+      if (this.isDead) return;
+      this.activeGlucagon.push(new GlucagonShot());
+      this.log(`GLUKAGON NOTFALL-SPRITZE!`);
+      this.updateUI();
+    }
+
     run(hours) {
+      if (this.isDead) return;
       const steps = (hours * 60) / CONFIG.TIME_STEP;
       for (let i = 0; i < steps; i++) {
         this.tick(CONFIG.TIME_STEP);
+        if (this.isDead) break;
       }
       this.updateUI();
+    }
+
+    toggleAutoRun() {
+      if (this.autoRunInterval) {
+        this.stopAutoRun();
+      } else {
+        this.startAutoRun();
+      }
+    }
+
+    startAutoRun() {
+      if (this.isDead) return;
+      const btn = document.getElementById('autoRunBtn');
+      if (btn) {
+        btn.textContent = "Stop Auto-Run";
+        btn.classList.add('danger');
+      }
+
+      this.autoRunInterval = setInterval(() => {
+        this.tick(CONFIG.TIME_STEP);
+        this.updateUI();
+        if (this.isDead) this.stopAutoRun();
+      }, this.autoRunSpeed);
+    }
+
+    stopAutoRun() {
+      clearInterval(this.autoRunInterval);
+      this.autoRunInterval = null;
+      const btn = document.getElementById('autoRunBtn');
+      if (btn) {
+        btn.textContent = "Auto-Run Starten";
+        btn.classList.remove('danger');
+      }
+    }
+
+    setSpeed(ms) {
+      this.autoRunSpeed = ms;
+      if (this.autoRunInterval) {
+        this.stopAutoRun();
+        this.startAutoRun();
+      }
     }
 
     // UI Helpers
@@ -169,12 +268,36 @@
       if (timeEl) timeEl.textContent = this.formatTime();
 
       const bgEl = document.getElementById('bgDisplay');
+      const statusEl = document.getElementById('healthStatus');
+
       if (bgEl) {
-        bgEl.textContent = Math.round(this.bg);
-        // Color coding
-        if (this.bg < 70) bgEl.style.color = 'var(--danger-color)';
-        else if (this.bg > 180) bgEl.style.color = 'var(--warn-color)';
-        else bgEl.style.color = 'var(--accent-color)';
+        const val = Math.round(this.bg);
+        bgEl.textContent = val;
+
+        // Color coding & Status
+        let statusText = "OK";
+        let statusClass = "health-status";
+
+        if (val < CONFIG.DEATH_LOW || val > CONFIG.DEATH_HIGH) {
+          statusText = "KRITISCH / TOD";
+          statusClass += " critical";
+          bgEl.style.color = 'var(--danger-color)';
+        } else if (val < CONFIG.WARN_LOW) {
+          statusText = "HYPO (NIEDRIG)";
+          statusClass += " critical";
+          bgEl.style.color = 'var(--danger-color)';
+        } else if (val > CONFIG.WARN_HIGH) {
+          statusText = "HYPER (HOCH)";
+          statusClass += " warning";
+          bgEl.style.color = 'var(--warn-color)';
+        } else {
+          bgEl.style.color = 'var(--accent-color)';
+        }
+
+        if (statusEl) {
+          statusEl.textContent = statusText;
+          statusEl.className = statusClass;
+        }
       }
 
       const iobEl = document.getElementById('iobDisplay');
@@ -187,7 +310,7 @@
       if (this.chart) {
         this.chart.data.labels = this.history.map(h => h.x);
         this.chart.data.datasets[0].data = this.history.map(h => h.y);
-        this.chart.update();
+        this.chart.update('none'); // 'none' mode for smoother animation in loop
       }
     }
 
@@ -220,6 +343,20 @@
               borderWidth: 1,
               borderDash: [5, 5],
               label: { content: 'High', enabled: true, color: 'orange', position: 'start' }
+            },
+            deadLow: {
+              type: 'box',
+              yMin: 0,
+              yMax: 30,
+              backgroundColor: 'rgba(255, 23, 68, 0.2)',
+              borderWidth: 0
+            },
+            deadHigh: {
+              type: 'box',
+              yMin: 600,
+              yMax: 1000,
+              backgroundColor: 'rgba(255, 23, 68, 0.2)',
+              borderWidth: 0
             }
           }
         };
@@ -243,10 +380,12 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false, // Disable default chart animations for performance
+          interaction: { mode: 'index', intersect: false },
           scales: {
             y: {
-              min: 40,
-              max: 350,
+              min: 0,
+              max: 400, // Look above 400 allows seeing high spikes
               grid: { color: 'rgba(255,255,255,0.1)' },
               ticks: { color: '#aaa' },
             },
@@ -298,6 +437,13 @@
       });
     }
 
+    const glucagonBtn = document.getElementById('glucagonBtn');
+    if (glucagonBtn) {
+      glucagonBtn.addEventListener('click', () => {
+        sim.addGlucagon();
+      });
+    }
+
     const nextHourBtn = document.getElementById('nextHourBtn');
     if (nextHourBtn) {
       nextHourBtn.addEventListener('click', () => {
@@ -305,10 +451,26 @@
       });
     }
 
-    const runDayBtn = document.getElementById('runDayBtn');
-    if (runDayBtn) {
-      runDayBtn.addEventListener('click', () => {
-        sim.run(6); // 6 hours
+    // New Auto Run Logic overrides Old Logic
+    const autoRunBtn = document.getElementById('autoRunBtn');
+    if (autoRunBtn) {
+      // Remove old event listener if possible (not needed here as we reload script)
+      autoRunBtn.addEventListener('click', () => {
+        sim.toggleAutoRun();
+      });
+    }
+
+    const speedSlider = document.getElementById('speedSlider');
+    if (speedSlider) {
+      speedSlider.addEventListener('input', (e) => {
+        // Slider value: 10 (fast) to 500 (slow)
+        // User probably wants Right = Fast? 
+        // Standard UI: Right is "More" -> More Speed -> Lower Interval?
+        // Let's assume Left=Slow (500ms), Right=Fast (10ms)
+        // So ms = 510 - value
+        const val = parseInt(e.target.value);
+        const ms = 600 - val; // 600 - 500 = 100ms, 600 - 100 = 500ms
+        sim.setSpeed(ms);
       });
     }
 
@@ -318,5 +480,12 @@
         window.location.reload();
       });
     }
+
+    const respawnBtn = document.getElementById('respawnBtn');
+    if (respawnBtn) {
+      respawnBtn.addEventListener('click', () => {
+        window.location.reload();
+      });
+    }
   });
-})(); 
+})();
