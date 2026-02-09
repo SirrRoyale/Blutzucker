@@ -105,6 +105,11 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  /* Prevent canvas from expanding the grid cell */
+  min-height: 0;
+  /* Allow grid item to shrink */
+  min-width: 0;
 }
 
 /* Controls */
