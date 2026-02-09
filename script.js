@@ -171,6 +171,22 @@
       }
     }
 
+    revive() {
+      this.isDead = false;
+      this.bg = 100; // Reset to safe value
+      this.activeBoluses = []; // Clear active insulin
+      this.activeMeals = [];   // Clear active food
+      this.activeGlucagon = []; // Clear active glucagon
+
+      const overlay = document.getElementById('deathOverlay');
+      if (overlay) {
+        overlay.classList.add('hidden');
+      }
+
+      this.log("Wiederbelebt mit Lebenselixier! 🧪");
+      this.updateUI();
+    }
+
     addInsulin(units) {
       if (units <= 0 || this.isDead) return;
       this.activeBoluses.push(new Bolus(units));
@@ -485,6 +501,13 @@
     if (respawnBtn) {
       respawnBtn.addEventListener('click', () => {
         window.location.reload();
+      });
+    }
+
+    const reviveBtn = document.getElementById('reviveBtn');
+    if (reviveBtn) {
+      reviveBtn.addEventListener('click', () => {
+        sim.revive();
       });
     }
   });
