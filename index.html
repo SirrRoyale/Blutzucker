@@ -1,32 +1,34 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
   <meta charset="UTF-8">
   <title>Blutzucker Simulation</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
 
   <h1>🩸 Blutzucker-Simulation</h1>
 
   <p><strong id="day">Tag 1</strong> – <strong id="time">06:00</strong></p>
   <p>Blutzucker: <strong><span id="value">90</span> mg/dL</strong></p>
-<div class="hormones">
-  <div class="hormone insulin">
-    <span>Insulin</span>
-    <div class="bar">
-      <div id="insulinBar"></div>
+  <div class="hormones">
+    <div class="hormone insulin">
+      <span>Insulin</span>
+      <div class="bar">
+        <div id="insulinBar"></div>
+      </div>
     </div>
-  </div>
 
-  <div class="hormone glucagon">
-    <span>Glucagon</span>
-    <div class="bar">
-      <div id="glucagonBar"></div>
+    <div class="hormone glucagon">
+      <span>Glucagon</span>
+      <div class="bar">
+        <div id="glucagonBar"></div>
+      </div>
     </div>
   </div>
-</div>
 
   <div class="controls">
     <button onclick="zucker()">🍬 Zucker</button>
@@ -40,4 +42,5 @@
 
   <script src="script.js"></script>
 </body>
+
 </html>

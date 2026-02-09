@@ -61,8 +61,8 @@ function zucker() {
   blutzucker += 30;
   insulin += 15;
   updateHormoneBars();
-clampGlucose();
-checkCriticalState();
+  clampGlucose();
+  checkCriticalState();
 
 }
 
@@ -71,8 +71,8 @@ function mahlzeit() {
   blutzucker += 20;
   insulin += 10;
   updateHormoneBars();
-clampGlucose();
-checkCriticalState();
+  clampGlucose();
+  checkCriticalState();
 
 }
 
@@ -81,8 +81,8 @@ function sport() {
   blutzucker -= 25;
   glucagon += 15;
   updateHormoneBars();
-clampGlucose();
-checkCriticalState();
+  clampGlucose();
+  checkCriticalState();
 
 }
 
@@ -93,8 +93,8 @@ function hormoneRegulation() {
     blutzucker -= insulin * 0.2;
     insulin -= 3;
     updateHormoneBars();
-clampGlucose();
-checkCriticalState();
+    clampGlucose();
+    checkCriticalState();
 
   }
 
@@ -119,7 +119,7 @@ function nextHour() {
   hormoneRegulation();
   updateTime();
   clampGlucose();
-checkCriticalState();
+  checkCriticalState();
 
 
   data.labels.push(`Tag ${day} ${String(hour).padStart(2, "0")}:00`);
