@@ -3,44 +3,91 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Blutzucker Simulation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blutzucker Simulation 2.0</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Using Chart.js 4.x -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+  <!-- Included for zones if possible, though I might need to load it dynamically if not available -->
 </head>
 
 <body>
-
-  <h1>🩸 Blutzucker-Simulation</h1>
-
-  <p><strong id="day">Tag 1</strong> – <strong id="time">06:00</strong></p>
-  <p>Blutzucker: <strong><span id="value">90</span> mg/dL</strong></p>
-  <div class="hormones">
-    <div class="hormone insulin">
-      <span>Insulin</span>
-      <div class="bar">
-        <div id="insulinBar"></div>
+  <div class="dashboard-container">
+    <!-- Header Section: Stats & Time -->
+    <header class="glass-panel header-panel">
+      <div class="title-section">
+        <h1>Blutzucker Sim</h1>
+        <p class="subtitle">Interaktives 24h Modell</p>
       </div>
-    </div>
-
-    <div class="hormone glucagon">
-      <span>Glucagon</span>
-      <div class="bar">
-        <div id="glucagonBar"></div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Zeit</span>
+          <span class="stat-value" id="timeDisplay">08:00</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Blutzucker</span>
+          <span class="stat-value" id="bgDisplay">--</span>
+          <span class="stat-unit">mg/dL</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">IOB</span>
+          <span class="stat-value" id="iobDisplay">0.0</span>
+          <span class="stat-unit">IE</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">COB</span>
+          <span class="stat-value" id="cobDisplay">0</span>
+          <span class="stat-unit">g</span>
+        </div>
       </div>
-    </div>
+    </header>
+
+    <!-- Main Chart Section -->
+    <section class="glass-panel chart-panel">
+      <canvas id="bgChart"></canvas>
+    </section>
+
+    <!-- Controls Section -->
+    <aside class="glass-panel controls-panel">
+      <h2>Aktionen</h2>
+
+      <div class="control-group">
+        <label for="carbsInput">Kohlenhydrate (g)</label>
+        <div class="input-wrapper">
+          <input type="range" id="carbsSlider" min="0" max="100" step="5" value="0">
+          <input type="number" id="carbsInput" min="0" max="200" value="0">
+        </div>
+        <button id="eatBtn" class="action-btn eat">Essen</button>
+      </div>
+
+      <div class="control-group">
+        <label for="insulinInput">Insulin (IE)</label>
+        <div class="input-wrapper">
+          <input type="range" id="insulinSlider" min="0" max="20" step="0.5" value="0">
+          <input type="number" id="insulinInput" min="0" max="50" step="0.5" value="0">
+        </div>
+        <button id="injectBtn" class="action-btn inject">Spritzen</button>
+      </div>
+
+      <hr class="divider">
+
+      <div class="simulation-controls">
+        <button id="nextHourBtn" class="sim-btn">Nächste Stunde (+1h)</button>
+        <button id="runDayBtn" class="sim-btn secondary">Auto-Run (Rest des Tages)</button>
+        <button id="resetBtn" class="sim-btn danger">Reset</button>
+      </div>
+
+      <div class="log-section">
+        <h3>Logbuch</h3>
+        <ul id="eventLog">
+          <!-- Events will be added here -->
+        </ul>
+      </div>
+    </aside>
   </div>
 
-  <div class="controls">
-    <button onclick="zucker()">🍬 Zucker</button>
-    <button onclick="mahlzeit()">🍽️ Mahlzeit</button>
-    <button onclick="sport()">🏃 Sport</button>
-    <button onclick="nextHour()">⏩ +1 Stunde</button>
-    <button onclick="reset()">🔄 Reset</button>
-  </div>
-
-  <canvas id="chart"></canvas>
-
-  <script src="script.js"></script>
+  <script src="script.js" type="module"></script>
 </body>
 
 </html>
