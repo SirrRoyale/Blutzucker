@@ -4,12 +4,12 @@
   const CONFIG = {
     ISF: 40,        // Insulin Sensitivity Factor: 1 Unit drops BG by 40 mg/dL
     ICR: 10,        // Insulin-to-Carb Ratio: 1 Unit covers 10g Carbs
-    BASAL: 0,       // Basal rate (Units/hr) - kept 0 for simplicity if using "Liver Output"
-    LIVER_OUTPUT: 10, // Liver produces glucose raising BG by 10 mg/dL per hour (counteracts Basal)
+    BASAL: 0,       // Basal rate (Units/hr)
+    METABOLISM: 10,  // Natural drop in BG per hour (mg/dL) - replaces LIVER_OUTPUT
     INSULIN_DURATION: 240, // 4 hours in minutes
     CARB_DURATION: 180,    // 3 hours in minutes
     GLUCAGON_DURATION: 90, // 1.5 hours in minutes
-    GLUCAGON_RISE: 50,     // 1mg Glucagon raises BG by approx 50-100mg/dL? Let's say 30mg/dL per "dose" (simulated unit)
+    GLUCAGON_RISE: 50,     // 1mg Glucagon raises BG by approx 50-100mg/dL
     TARGET_BG: 100,
     TIME_STEP: 5,   // Minutes per tick
 
@@ -106,9 +106,9 @@
     tick(minutes) {
       if (this.isDead) return;
 
-      // 1. Apply Basal / Liver (Net effect +)
-      const liverEffect = (CONFIG.LIVER_OUTPUT / 60) * minutes;
-      this.bg += liverEffect;
+      // 1. Apply Metabolism (Natural Drop)
+      const metabolismEffect = (CONFIG.METABOLISM / 60) * minutes;
+      this.bg -= metabolismEffect; // Drops over time
 
       // 2. Apply Boluses (Insulin drops BG)
       let drop = 0;
@@ -156,7 +156,29 @@
         this.die("Hypoglykämischer Schock!");
       } else if (this.bg >= CONFIG.DEATH_HIGH) {
         this.die("Ketoazidotisches Koma!");
+      } else if (this.bg <= CONFIG.WARN_LOW) {
+        this.warn("Achtung: Blutzucker niedrig! Bitte essen! 🍎");
+      } else {
+        this.clearWarn();
       }
+    }
+
+    warn(message) {
+      const overlay = document.getElementById('deathOverlay');
+      const msg = document.getElementById('deathMessage');
+      // Reuse overlay but style it as warning if not dead
+      // Or better: Use a separate warning element or just show it in the UI status
+      // For now, let's use a non-intrusive notification or update the health status prominently
+
+      const statusEl = document.getElementById('healthStatus');
+      if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.className = "health-status critical warning-pulse";
+      }
+    }
+
+    clearWarn() {
+      // Status is handled in updateUI usually, but strict warning clearing is good
     }
 
     die(reason) {
@@ -414,6 +436,25 @@
         }
       });
     }
+
+    updateChartTheme(isDark) {
+      if (!this.chart) return;
+
+      const textColor = isDark ? '#e0e0e0' : '#444';
+      const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
+      if (this.chart.options.scales.x) {
+        this.chart.options.scales.x.ticks.color = textColor;
+        this.chart.options.scales.x.grid.color = gridColor;
+      }
+      if (this.chart.options.scales.y) {
+        this.chart.options.scales.y.ticks.color = textColor;
+        this.chart.options.scales.y.grid.color = gridColor;
+      }
+
+      // Update Chart defaults for future updates? Not strictly needed if we update instance options
+      this.chart.update('none');
+    }
   }
 
   // --- App Initialization ---
@@ -421,7 +462,30 @@
   document.addEventListener('DOMContentLoaded', () => {
     const sim = new Simulation();
 
-    // --- Event Listeners ---
+    // --- Theme Logic ---
+    const themeBtn = document.getElementById('themeToggle');
+    const body = document.body;
+
+    // Check local storage 
+    let isDark = localStorage.getItem('theme') === 'dark';
+    if (isDark) {
+      body.classList.add('dark-mode');
+      sim.updateChartTheme(true);
+    }
+
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        isDark = !isDark;
+        if (isDark) {
+          body.classList.add('dark-mode');
+          localStorage.setItem('theme', 'dark');
+        } else {
+          body.classList.remove('dark-mode');
+          localStorage.setItem('theme', 'light');
+        }
+        sim.updateChartTheme(isDark);
+      });
+    }
     // Sliders sync with inputs
     function sync(id1, id2) {
       const el1 = document.getElementById(id1);
