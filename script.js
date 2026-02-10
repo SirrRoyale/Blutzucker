@@ -303,7 +303,7 @@
       const dashboard = document.querySelector('.dashboard-container');
 
       // Default State
-      let statusText = "OK";
+      let statusText = "STATUS: OK";
       let statusClass = "health-status";
       // Clear previous danger states
       if (dashboard) {
@@ -317,17 +317,17 @@
 
         // Color coding & Status & Dashboard Visuals
         if (val < CONFIG.DEATH_LOW || val >= CONFIG.DEATH_HIGH) {
-          statusText = val < CONFIG.DEATH_LOW ? "KRITISCH (HYPO)" : "KRITISCH (HYPER)";
+          statusText = val < CONFIG.DEATH_LOW ? "STATUS: KRITISCH (HYPO)" : "STATUS: KRITISCH (HYPER)";
           statusClass += " critical";
           bgEl.style.color = 'var(--danger-color)';
           if (dashboard) dashboard.classList.add('state-critical');
         } else if (val < CONFIG.WARN_LOW || val > CONFIG.WARN_HIGH) {
-          statusText = val < CONFIG.WARN_LOW ? "NIEDRIG (WARN)" : "HOCH (WARN)";
+          statusText = val < CONFIG.WARN_LOW ? "STATUS: NIEDRIG (WARN)" : "STATUS: HOCH (WARN)";
           statusClass += " warning";
           bgEl.style.color = 'var(--warn-color)';
           if (dashboard) dashboard.classList.add('state-warning');
         } else {
-          statusText = "OK";
+          statusText = "STATUS: OK";
           bgEl.style.color = 'var(--accent-color)';
         }
 
