@@ -4,20 +4,44 @@
   const CONFIG = {
     ISF: 40,        // Insulin Sensitivity Factor: 1 Unit drops BG by 40 mg/dL
     ICR: 10,        // Insulin-to-Carb Ratio: 1 Unit covers 10g Carbs
-    BASAL: 0,       // Basal rate (Units/hr)
-    // METABOLISM REMOVED - Set by Body Type
-    INSULIN_DURATION: 240, // 4 hours in minutes
-    CARB_DURATION: 180,    // 3 hours in minutes
-    GLUCAGON_DURATION: 90, // 1.5 hours in minutes
-    GLUCAGON_RISE: 50,     // 1mg Glucagon raises BG by approx 50-100mg/dL
-    TARGET_BG: 100,
     TIME_STEP: 5,   // Minutes per tick
+    TARGET_BG: 100,
 
     // Health Limits
-    DEATH_LOW: 50,
-    DEATH_HIGH: 550,
+    DEATH_LOW: 40,
+    DEATH_HIGH: 600,
     WARN_LOW: 70,
-    WARN_HIGH: 250
+    WARN_HIGH: 250,
+    RANGE_MIN: 70,
+    RANGE_MAX: 140,
+
+    // Meal Types
+    MEALS: {
+      FAST: { label: "Süßigkeiten", duration: 90, peak: 30, multiplier: 1.2 },
+      NORMAL: { label: "Mahlzeit", duration: 180, peak: 60, multiplier: 1.0 },
+      SLOW: { label: "Vollkorn", duration: 300, peak: 120, multiplier: 0.8 }
+    },
+
+    // Sport Types
+    SPORT: {
+      LIGHT: { label: "Spaziergang", effect: 15, duration: 60 },
+      MEDIUM: { label: "Joggen", effect: 40, duration: 45 },
+      HEAVY: { label: "Intensiv", effect: 80, duration: 30 }
+    },
+
+    // Insulin Types
+    INSULIN: {
+      BOLUS: { label: "Bolus", duration: 240, peak: 60 },
+      BASAL: { label: "Basal", duration: 1440, peak: 360 } // 24h
+    },
+
+    // Random Events (Higher Frequencies)
+    EVENTS: [
+      { id: 'stress', label: "Stress", probability: 0.05, effect: 20, msg: "Stress lässt den Zucker steigen! 😰" },
+      { id: 'snack', label: "Snack", probability: 0.03, effect: 15, msg: "Heimlicher Snack ohne Insulin! 🍪" },
+      { id: 'sick', label: "Infekt", probability: 0.01, effect: 50, msg: "Ein Infekt bahnt sich an... 🤒" },
+      { id: 'forgot', label: "Sport?", probability: 0.02, effect: -20, msg: "Längere Laufwege als gedacht. 🚶" }
+    ]
   };
 
   // --- Chart Global Defaults for Light Mode ---
@@ -28,40 +52,126 @@
 
   // --- Helper Classes ---
 
-  class Bolus {
-    constructor(amount) {
+  class InsulinEffect {
+    constructor(amount, typeKey = 'BOLUS') {
+      const type = CONFIG.INSULIN[typeKey];
       this.initialAmount = amount;
       this.amount = amount;
-      this.duration = CONFIG.INSULIN_DURATION;
+      this.typeKey = typeKey;
+      this.duration = type.duration;
       this.elapsed = 0;
     }
 
     getEffect(minutes) {
       if (this.elapsed >= this.duration) return 0;
-      // Effect = Drop in BG
-      const effect = (this.initialAmount * CONFIG.ISF) * (minutes / this.duration);
+
+      // Simple linear model for now, could be improved to a curve
+      // Basal is much flatter.
+      const effectBase = (this.initialAmount * CONFIG.ISF) * (minutes / this.duration);
+
       this.elapsed += minutes;
       this.amount = Math.max(0, this.initialAmount * (1 - (this.elapsed / this.duration)));
+      return effectBase;
+    }
+  }
+
+  class MealEffect {
+    constructor(carbs, typeKey = 'NORMAL') {
+      const type = CONFIG.MEALS[typeKey];
+      this.initialCarbs = carbs;
+      this.carbs = carbs;
+      this.typeKey = typeKey;
+      this.duration = type.duration;
+      this.peak = type.peak;
+      this.elapsed = 0;
+    }
+
+    getEffect(minutes) {
+      if (this.elapsed >= this.duration) return 0;
+
+      const riseFactor = CONFIG.ISF / CONFIG.ICR;
+      const totalRise = this.initialCarbs * riseFactor;
+
+      // Modified triangular curve for peak effect
+      let intensity = 0;
+      if (this.elapsed < this.peak) {
+        // Rising to peak
+        intensity = (this.elapsed / this.peak);
+      } else {
+        // Falling from peak
+        intensity = 1 - ((this.elapsed - this.peak) / (this.duration - this.peak));
+      }
+
+      // Normalize intensity so area under curve matches totalRise
+      // Area = 0.5 * base * height = 0.5 * duration * 1
+      // Average intensity = 0.5. Total effect = totalRise.
+      // effect per minute = (totalRise / duration) * (intensity / average_intensity)
+      const effect = (totalRise / this.duration) * (intensity / 0.5) * (minutes / 1);
+
+      this.elapsed += minutes;
+      this.carbs = Math.max(0, this.initialCarbs * (1 - (this.elapsed / this.duration)));
       return effect;
     }
   }
 
-  class Meal {
-    constructor(carbs) {
-      this.initialCarbs = carbs;
-      this.carbs = carbs;
-      this.duration = CONFIG.CARB_DURATION;
+  class SportEffect {
+    constructor(typeKey) {
+      const type = CONFIG.SPORT[typeKey];
+      this.typeKey = typeKey;
+      this.effect = type.effect;
+      this.duration = type.duration;
       this.elapsed = 0;
     }
 
-    getEffect(minutes) {
+    getEffect(minutes, currentIOB) {
       if (this.elapsed >= this.duration) return 0;
-      const riseFactor = CONFIG.ISF / CONFIG.ICR;
-      const totalRise = this.initialCarbs * riseFactor;
-      const effect = totalRise * (minutes / this.duration);
+
+      // Sport intensity * minutes. If IOB > 0, effect is stronger (Hypo risk)
+      let multiplier = 1.0;
+      if (currentIOB > 0.5) multiplier = 1.5; // Risk factor
+
+      const drop = (this.effect / this.duration) * minutes * multiplier;
       this.elapsed += minutes;
-      this.carbs = Math.max(0, this.initialCarbs * (1 - (this.elapsed / this.duration)));
-      return effect;
+      return drop;
+    }
+  }
+
+  class DayTracker {
+    constructor() {
+      this.reset();
+    }
+    reset() {
+      this.totalSteps = 0;
+      this.inRangeSteps = 0;
+      this.hypos = 0;
+      this.hypers = 0;
+      this.lastState = 'normal'; // 'hypo', 'hyper', 'normal'
+    }
+    track(bg) {
+      this.totalSteps++;
+      if (bg >= CONFIG.RANGE_MIN && bg <= CONFIG.RANGE_MAX) {
+        this.inRangeSteps++;
+      }
+
+      if (bg < CONFIG.WARN_LOW) {
+        if (this.lastState !== 'hypo') this.hypos++;
+        this.lastState = 'hypo';
+      } else if (bg > CONFIG.WARN_HIGH) {
+        if (this.lastState !== 'hyper') this.hypers++;
+        this.lastState = 'hyper';
+      } else {
+        this.lastState = 'normal';
+      }
+    }
+    getScore() {
+      const tir = (this.inRangeSteps / this.totalSteps) * 100;
+      let grade = 'F';
+      if (tir > 90 && this.hypos === 0) grade = 'A';
+      else if (tir > 75) grade = 'B';
+      else if (tir > 50) grade = 'C';
+      else if (tir > 25) grade = 'D';
+
+      return { tir: Math.round(tir), hypos: this.hypos, hypers: this.hypers, grade };
     }
   }
 
@@ -74,10 +184,13 @@
       this.bg = 100;
       this.metabolismRate = 0; // Set by selection
       this.time = { h: 8, m: 0 };
+      this.totalMinutes = 0;
       this.activeBoluses = [];
       this.activeMeals = [];
+      this.activeActivities = [];
       this.history = []; // { t: "08:00", bg: 100 }
 
+      this.tracker = new DayTracker();
       this.isDead = false;
       this.autoRunInterval = null;
       this.autoRunSpeed = 100;
@@ -86,137 +199,188 @@
       this.updateUI();
     }
 
+    fullReset() {
+      this.stopAutoRun();
+      this.bg = 100;
+      this.time = { h: 8, m: 0 };
+      this.totalMinutes = 0;
+      this.activeBoluses = [];
+      this.activeMeals = [];
+      this.activeActivities = [];
+      this.history = [{ x: "08:00", y: 100 }];
+      this.isDead = false;
+      this.tracker.reset();
+
+      // Clear Overlays
+      const deathOverlay = document.getElementById('deathOverlay');
+      const resultsOverlay = document.getElementById('resultsOverlay');
+      if (deathOverlay) deathOverlay.classList.add('hidden');
+      if (resultsOverlay) resultsOverlay.classList.add('hidden');
+
+      // Reset Chart
+      if (this.chart) {
+        this.chart.data.labels = ["08:00"];
+        this.chart.data.datasets[0].data = [100];
+        this.chart.options.scales.y.max = 200;
+        this.chart.update('none');
+      }
+
+      this.updateUI();
+    }
+
     // Time Management
     tick(minutes) {
       if (this.isDead) return;
 
-      // 1. Apply Metabolism (Natural Drop or Rise based on body type)
-      // metabolismRate is per hour.
-      // If negative (drop), we subtract. If positive (rise), we still add it (subtraction of negative is addition?)
-      // Wait, let's keep it simple: rate is "Change per hour". 
-      // So BG += (Rate / 60 * minutes)
-      const metabolismEffect = (this.metabolismRate / 60) * minutes;
+      // 1. Apply Metabolism
+      const rate = parseFloat(this.metabolismRate);
+      const metabolismEffect = (isNaN(rate) ? 0 : rate / 60) * minutes;
       this.bg += metabolismEffect;
 
-      // 2. Apply Boluses (Insulin drops BG)
+      // 2. Apply Insulin (InsulinEffect)
       let drop = 0;
       this.activeBoluses.forEach(b => drop += b.getEffect(minutes));
       this.bg -= drop;
 
-      // 3. Apply Meals (Carbs raise BG)
+      // 3. Apply Meals (MealEffect)
       let rise = 0;
       this.activeMeals.forEach(m => rise += m.getEffect(minutes));
       this.bg += rise;
 
+      // 4. Apply Activities
+      let sportDrop = 0;
+      const currentIOB = parseFloat(this.getIOB());
+      this.activeActivities.forEach(a => sportDrop += a.getEffect(minutes, currentIOB));
+      this.bg -= sportDrop;
 
+      // 5. Random Events
+      this.processRandomEvents();
 
-      // 5. Cleanup expired
+      // 6. Cleanup expired
       this.activeBoluses = this.activeBoluses.filter(b => b.elapsed < b.duration);
       this.activeMeals = this.activeMeals.filter(m => m.elapsed < m.duration);
+      this.activeActivities = this.activeActivities.filter(a => a.elapsed < a.duration);
 
-      // 6. Check Health
+      // 7. Check Health & Track Stats
       this.checkHealth();
+      this.tracker.track(this.bg);
 
-      // 7. Advance Time
+      // 8. Advance Time
       this.time.m += minutes;
+      this.totalMinutes += minutes;
       if (this.time.m >= 60) {
         this.time.h += Math.floor(this.time.m / 60);
         this.time.m %= 60;
       }
       if (this.time.h >= 24) this.time.h %= 24;
 
-      // 8. Record History
+      // 9. Day Summary
+      if (this.totalMinutes >= 1440) { // 24 Hours
+        this.showDaySummary();
+        this.totalMinutes = 0; // Reset for next day
+        this.tracker.reset();
+      }
+
+      // 10. Record History
       this.history.push({
         x: this.formatTime(),
         y: Math.round(this.bg)
       });
 
-      // Keep last 24h (288 * 5min = 1440 min)
       if (this.history.length > 288) this.history.shift();
     }
 
+    processRandomEvents() {
+      CONFIG.EVENTS.forEach(ev => {
+        if (Math.random() < ev.probability) {
+          const effect = parseFloat(ev.effect);
+          if (!isNaN(effect)) this.bg += effect;
+        }
+      });
+    }
+
     checkHealth() {
-      // Death Thresholds
-      if (this.bg <= 40) {
-        this.die("Hypoglykämischer Schock! (Blutzucker < 40)");
-      } else if (this.bg >= 600) {
-        this.die("Ketoazidotisches Koma! (Blutzucker > 600)");
+      if (isNaN(this.bg)) this.bg = 100;
+      if (this.bg <= CONFIG.DEATH_LOW) {
+        this.die(`Hypoglykämischer Schock! (Blutzucker < ${CONFIG.DEATH_LOW})`);
+      } else if (this.bg >= CONFIG.DEATH_HIGH) {
+        this.die(`Ketoazidotisches Koma! (Blutzucker > ${CONFIG.DEATH_HIGH})`);
       }
-      // Warning Thresholds
-      else if (this.bg <= 70) {
-        this.warn("Achtung: Blutzucker niedrig! Bitte essen! 🍎");
-      } else if (this.bg >= 250) {
-        // Maybe a warning for high too?
-        // The requirement says "Nur Warnstatus anzeigen" implies we should warn.
-        this.warn("Achtung: Blutzucker hoch! Insulin benötigt. 💉");
-      } else {
-        this.clearWarn();
+      else if (this.bg <= CONFIG.WARN_LOW) {
+        this.warn("Niedriger Blutzucker! 🍎");
+      } else if (this.bg >= CONFIG.WARN_HIGH) {
+        this.warn("Hoher Blutzucker! 💉");
       }
     }
 
     warn(message) {
-      const overlay = document.getElementById('deathOverlay');
-      const msg = document.getElementById('deathMessage');
-      // Reuse overlay but style it as warning if not dead
-      // Or better: Use a separate warning element or just show it in the UI status
-      // For now, let's use a non-intrusive notification or update the health status prominently
-
       const statusEl = document.getElementById('healthStatus');
       if (statusEl) {
         statusEl.textContent = message;
-        statusEl.className = "health-status critical warning-pulse";
+        statusEl.className = "health-status warning warning-pulse";
       }
-    }
-
-    clearWarn() {
-      // Status is handled in updateUI usually, but strict warning clearing is good
     }
 
     die(reason) {
       this.isDead = true;
       this.stopAutoRun();
-
       const overlay = document.getElementById('deathOverlay');
-      const msg = document.getElementById('deathMessage');
-      if (overlay && msg) {
-        // We probably want to keep "GAME OVER" as title and put reason in paragraph?
-        // Or just replace the title? The new HTML has a <p> after h2.
-        // Let's find the paragraph if it exists, otherwise set h2
+      if (overlay) {
         const p = overlay.querySelector('p');
-        if (p) {
-          p.textContent = reason;
-        } else {
-          msg.textContent = reason;
-        }
+        if (p) p.textContent = reason;
         overlay.classList.remove('hidden');
       }
     }
 
     revive() {
       this.isDead = false;
-      this.bg = 100; // Reset to safe value
-      this.activeBoluses = []; // Clear active insulin
-      this.activeMeals = [];   // Clear active food
-
+      this.bg = 100;
+      this.activeBoluses = [];
+      this.activeMeals = [];
+      this.activeActivities = [];
       const overlay = document.getElementById('deathOverlay');
-      if (overlay) {
-        overlay.classList.add('hidden');
-      }
-
-      this.log("Wiederbelebt mit Lebenselixier! 🧪");
+      if (overlay) overlay.classList.add('hidden');
       this.updateUI();
     }
 
-    addInsulin(units) {
-      if (units <= 0 || this.isDead) return;
-      this.activeBoluses.push(new Bolus(units));
-      this.log(`Spritze: ${units} IE`);
+    // HUD & Internal tracking
+    getIOB() {
+      const val = this.activeBoluses.reduce((acc, b) => acc + (b.amount || 0), 0);
+      return isNaN(val) ? "0.0" : val.toFixed(1);
     }
 
-    addCarbs(grams) {
-      if (grams <= 0 || this.isDead) return;
-      this.activeMeals.push(new Meal(grams));
-      this.log(`Essen: ${grams}g Kohlenhydrate`);
+    getCOB() {
+      const val = this.activeMeals.reduce((acc, m) => acc + (m.carbs || 0), 0);
+      return isNaN(val) ? "0" : val.toFixed(0);
+    }
+
+    addInsulin(units, type = 'BOLUS') {
+      if (units <= 0 || isNaN(units) || this.isDead) return;
+      this.activeBoluses.push(new InsulinEffect(units, type));
+    }
+
+    addCarbs(grams, type = 'NORMAL') {
+      if (grams <= 0 || isNaN(grams) || this.isDead) return;
+      this.activeMeals.push(new MealEffect(grams, type));
+    }
+
+    addActivity(type) {
+      if (this.isDead) return;
+      this.activeActivities.push(new SportEffect(type));
+    }
+
+    showDaySummary() {
+      const stats = this.tracker.getScore();
+      this.stopAutoRun();
+
+      const overlay = document.getElementById('resultsOverlay');
+      if (overlay) {
+        document.getElementById('resTIR').textContent = stats.tir + "%";
+        document.getElementById('resHypos').textContent = stats.hypos;
+        document.getElementById('resHypers').textContent = stats.hypers;
+        document.getElementById('resGrade').textContent = stats.grade;
+        overlay.classList.remove('hidden');
+      }
     }
 
 
@@ -243,7 +407,7 @@
       if (this.isDead) return;
       const btn = document.getElementById('autoRunBtn');
       if (btn) {
-        btn.textContent = "Stop Auto-Run";
+        btn.innerHTML = "⏸ Stop";
         btn.classList.add('danger');
       }
 
@@ -259,7 +423,7 @@
       this.autoRunInterval = null;
       const btn = document.getElementById('autoRunBtn');
       if (btn) {
-        btn.textContent = "Auto-Run Starten";
+        btn.innerHTML = "▶ Run";
         btn.classList.remove('danger');
       }
     }
@@ -277,22 +441,6 @@
       return `${String(this.time.h).padStart(2, '0')}:${String(this.time.m).padStart(2, '0')}`;
     }
 
-    getIOB() {
-      return this.activeBoluses.reduce((acc, b) => acc + b.amount, 0).toFixed(1);
-    }
-
-    getCOB() {
-      return this.activeMeals.reduce((acc, m) => acc + m.carbs, 0).toFixed(0);
-    }
-
-    log(msg) {
-      const logList = document.getElementById('eventLog');
-      if (!logList) return;
-      const li = document.createElement('li');
-      li.innerHTML = `<span class="log-time">${this.formatTime()}</span> ${msg}`;
-      logList.prepend(li); // Newest top
-    }
-
     updateUI() {
       // Update Text
       const timeEl = document.getElementById('timeDisplay');
@@ -305,24 +453,21 @@
       // Default State
       let statusText = "STATUS: OK";
       let statusClass = "health-status";
-      // Clear previous danger states
       if (dashboard) {
         dashboard.classList.remove('state-warning', 'state-critical');
       }
 
       const val = Math.round(this.bg);
-
-      if (bgEl) {
+      if (bgEl && !isNaN(val)) {
         bgEl.textContent = val;
 
-        // Color coding & Status & Dashboard Visuals
         if (val < CONFIG.DEATH_LOW || val >= CONFIG.DEATH_HIGH) {
-          statusText = val < CONFIG.DEATH_LOW ? "STATUS: KRITISCH (HYPO)" : "STATUS: KRITISCH (HYPER)";
+          statusText = val < CONFIG.DEATH_LOW ? "KRITISCH (HYPO)" : "KRITISCH (HYPER)";
           statusClass += " critical";
           bgEl.style.color = 'var(--danger-color)';
           if (dashboard) dashboard.classList.add('state-critical');
         } else if (val < CONFIG.WARN_LOW || val > CONFIG.WARN_HIGH) {
-          statusText = val < CONFIG.WARN_LOW ? "STATUS: NIEDRIG (WARN)" : "STATUS: HOCH (WARN)";
+          statusText = val < CONFIG.WARN_LOW ? "NIEDRIG (WARN)" : "HOCH (WARN)";
           statusClass += " warning";
           bgEl.style.color = 'var(--warn-color)';
           if (dashboard) dashboard.classList.add('state-warning');
@@ -344,50 +489,38 @@
       if (cobEl) cobEl.textContent = this.getCOB();
 
       // Update Chart
-      if (this.chart) {
+      if (this.chart && this.history.length > 0) {
         this.chart.data.labels = this.history.map(h => h.x);
         this.chart.data.datasets[0].data = this.history.map(h => h.y);
 
-        // Dynamic Y-Axis Scaling
-        // Find max value in history or current BG
-        const maxVal = Math.max(val, ...this.history.map(h => h.y));
+        // Safety check for maxVal calculation
+        const historyValues = this.history.map(h => h.y).filter(v => !isNaN(v));
+        const maxVal = historyValues.length > 0 ? Math.max(val, ...historyValues) : 200;
 
-        let newMax = 200; // Default (0-200)
+        let newMax = 200;
+        if (maxVal > 580) newMax = Math.ceil((maxVal + 50) / 50) * 50;
+        else if (maxVal > 380) newMax = 600;
+        else if (maxVal > 180) newMax = 400;
+        else newMax = 200;
 
-        // Logic: Always show at least 200.
-        // If max > 180 (buffer), go to 400.
-        // If max > 380, go to 600.
-        // If max > 580, go to max + buffer.
-
-        if (maxVal > 580) {
-          newMax = Math.ceil((maxVal + 50) / 50) * 50;
-        } else if (maxVal > 380) {
-          newMax = 600;
-        } else if (maxVal > 180) {
-          newMax = 400;
-        } else {
-          newMax = 200;
-        }
-
-        // Apply only if changed to avoid jitter
-        if (this.chart.options.scales.y.max !== newMax) {
+        if (!isNaN(newMax) && this.chart.options.scales.y.max !== newMax) {
           this.chart.options.scales.y.max = newMax;
         }
 
-        // --- Dynamic Chart Colors ---
+        // Dynamic Chart Colors
         const ds = this.chart.data.datasets[0];
         if (val < CONFIG.DEATH_LOW || val >= CONFIG.DEATH_HIGH) {
-          ds.borderColor = '#d50000'; // Red
+          ds.borderColor = '#d50000';
           ds.backgroundColor = 'rgba(213, 0, 0, 0.2)';
         } else if (val < CONFIG.WARN_LOW || val > CONFIG.WARN_HIGH) {
-          ds.borderColor = '#ff6d00'; // Orange
+          ds.borderColor = '#ff6d00';
           ds.backgroundColor = 'rgba(255, 109, 0, 0.2)';
         } else {
-          ds.borderColor = '#00c853'; // Green
+          ds.borderColor = '#00c853';
           ds.backgroundColor = 'rgba(0, 200, 83, 0.2)';
         }
 
-        this.chart.update('none'); // 'none' mode for smoother animation in loop
+        this.chart.update('none');
       }
     }
 
@@ -497,13 +630,41 @@
   }
 
   // --- App Initialization ---
-  // Wait for DOM to be ready
   document.addEventListener('DOMContentLoaded', () => {
     const sim = new Simulation();
 
-    // --- Start Screen Logic ---
+    // --- Navigation Logic ---
+    const mainMenu = document.getElementById('mainMenu');
+    const creditsScreen = document.getElementById('creditsScreen');
     const startScreen = document.getElementById('startScreen');
     const dashboard = document.querySelector('.dashboard-container');
+
+    const startGameBtn = document.getElementById('startGameBtn');
+    const showCreditsBtn = document.getElementById('showCreditsBtn');
+    const backToMenuBtn = document.getElementById('backToMenuBtn');
+
+    if (startGameBtn) {
+      startGameBtn.addEventListener('click', () => {
+        mainMenu.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+      });
+    }
+
+    if (showCreditsBtn) {
+      showCreditsBtn.addEventListener('click', () => {
+        mainMenu.classList.add('hidden');
+        creditsScreen.classList.remove('hidden');
+      });
+    }
+
+    if (backToMenuBtn) {
+      backToMenuBtn.addEventListener('click', () => {
+        creditsScreen.classList.add('hidden');
+        mainMenu.classList.remove('hidden');
+      });
+    }
+
+    // --- Start Screen Logic (Character Selection) ---
     const typeButtons = document.querySelectorAll('.body-type-btn');
     const bodyTypeDisplay = document.getElementById('bodyTypeDisplay');
 
@@ -514,7 +675,7 @@
         const typeName = btn.querySelector('.label').textContent;
         const icon = btn.querySelector('.icon').textContent;
 
-        // Hide overlay
+        // Hide overlays
         startScreen.classList.add('hidden');
         dashboard.classList.remove('blur-background');
 
@@ -527,6 +688,30 @@
         // Log selection
         sim.log(`Simulation gestartet. Körpertyp: ${typeName} (${rate > 0 ? '+' : ''}${rate} mg/dL/h)`);
       });
+    });
+
+    // --- Collapsible Cards Logic (Accordion) ---
+    const collapsibles = document.querySelectorAll('.collapsible-card');
+    collapsibles.forEach(card => {
+      const toggle = card.querySelector('.collapse-toggle');
+      if (toggle) {
+        toggle.addEventListener('click', () => {
+          const isCollapsed = card.classList.contains('collapsed');
+
+          // Close all others
+          collapsibles.forEach(c => c.classList.add('collapsed'));
+
+          // Toggle current
+          if (isCollapsed) {
+            card.classList.remove('collapsed');
+          }
+        });
+      }
+    });
+
+    // Start with all collapsed except the first one for a cleaner look
+    collapsibles.forEach((c, idx) => {
+      if (idx !== 0) c.classList.add('collapsed');
     });
 
     // --- Theme Logic ---
@@ -543,7 +728,6 @@
 
     if (themeBtn) {
       themeBtn.addEventListener('click', () => {
-        console.log("Theme button clicked");
         isDark = !isDark;
         if (isDark) {
           body.classList.add('dark-mode');
@@ -555,25 +739,17 @@
         sim.updateChartTheme(isDark);
       });
     }
-    // Sliders sync with inputs
-    function sync(id1, id2) {
-      const el1 = document.getElementById(id1);
-      const el2 = document.getElementById(id2);
-      if (!el1 || !el2) return;
 
-      el1.addEventListener('input', () => el2.value = el1.value);
-      el2.addEventListener('input', () => el1.value = el2.value);
-    }
-
-    sync('carbsSlider', 'carbsInput');
-    sync('insulinSlider', 'insulinInput');
-
+    // --- Action Button Listeners ---
     const eatBtn = document.getElementById('eatBtn');
     if (eatBtn) {
       eatBtn.addEventListener('click', () => {
         const carbs = parseFloat(document.getElementById('carbsInput').value);
-        sim.addCarbs(carbs);
+        const type = document.getElementById('mealType').value;
+        sim.addCarbs(carbs, type);
         sim.updateUI();
+        // Reset input
+        document.getElementById('carbsInput').value = 0;
       });
     }
 
@@ -581,13 +757,24 @@
     if (injectBtn) {
       injectBtn.addEventListener('click', () => {
         const units = parseFloat(document.getElementById('insulinInput').value);
-        sim.addInsulin(units);
+        const type = document.getElementById('insulinType').value;
+        sim.addInsulin(units, type);
         sim.updateUI();
+        // Reset input
+        document.getElementById('insulinInput').value = 0;
       });
     }
 
+    const sportButtons = document.querySelectorAll('.sport-btn');
+    sportButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.type;
+        sim.addActivity(type);
+        sim.updateUI();
+      });
+    });
 
-
+    // --- Simulation Controls ---
     const nextHourBtn = document.getElementById('nextHourBtn');
     if (nextHourBtn) {
       nextHourBtn.addEventListener('click', () => {
@@ -595,10 +782,8 @@
       });
     }
 
-    // New Auto Run Logic overrides Old Logic
     const autoRunBtn = document.getElementById('autoRunBtn');
     if (autoRunBtn) {
-      // Remove old event listener if possible (not needed here as we reload script)
       autoRunBtn.addEventListener('click', () => {
         sim.toggleAutoRun();
       });
@@ -607,13 +792,8 @@
     const speedSlider = document.getElementById('speedSlider');
     if (speedSlider) {
       speedSlider.addEventListener('input', (e) => {
-        // Slider value: 10 (fast) to 500 (slow)
-        // User probably wants Right = Fast? 
-        // Standard UI: Right is "More" -> More Speed -> Lower Interval?
-        // Let's assume Left=Slow (500ms), Right=Fast (10ms)
-        // So ms = 510 - value
         const val = parseInt(e.target.value);
-        const ms = 600 - val; // 600 - 500 = 100ms, 600 - 100 = 500ms
+        const ms = 600 - val;
         sim.setSpeed(ms);
       });
     }
@@ -621,14 +801,22 @@
     const resetBtn = document.getElementById('resetBtn');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        window.location.reload();
+        sim.fullReset();
       });
     }
 
     const respawnBtn = document.getElementById('respawnBtn');
     if (respawnBtn) {
       respawnBtn.addEventListener('click', () => {
-        window.location.reload();
+        sim.fullReset();
+      });
+    }
+
+    // Also handle the reset button in the results overlay
+    const resultsResetBtn = document.querySelector('#resultsOverlay .restart-btn');
+    if (resultsResetBtn) {
+      resultsResetBtn.addEventListener('click', () => {
+        sim.fullReset();
       });
     }
 
@@ -636,6 +824,17 @@
     if (reviveBtn) {
       reviveBtn.addEventListener('click', () => {
         sim.revive();
+      });
+    }
+
+    const headerTitle = document.getElementById('headerTitle');
+    if (headerTitle) {
+      headerTitle.addEventListener('click', () => {
+        sim.stopAutoRun();
+        dashboard.classList.add('hidden');
+        mainMenu.classList.remove('hidden');
+        // Ensure startScreen is hidden too if it was visible
+        startScreen.classList.add('hidden');
       });
     }
   });

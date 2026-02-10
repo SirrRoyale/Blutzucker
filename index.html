@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Blutzucker Simulation 2.0</title>
+  <title>Blutzucker Simulation</title>
   <link rel="stylesheet" href="style.css">
   <!-- Using Chart.js 4.x UMD Bundle (No Module) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
@@ -12,10 +12,33 @@
 </head>
 
 <body>
-  <!-- Start Screen Overlay -->
-  <div id="startScreen" class="start-overlay">
+  <!-- Main Menu Overlay -->
+  <div id="mainMenu" class="start-overlay">
     <div class="glass-panel start-card">
-      <h1>Willkommen zur Blutzucker Sim 2.0</h1>
+      <h1>Blutzucker Simulation</h1>
+      <div class="menu-btn-group">
+        <button id="startGameBtn" class="sim-btn menu-large-btn">🎮 START</button>
+        <button id="showCreditsBtn" class="sim-btn menu-large-btn secondary">📜 CREDITS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Credits Screen Overlay -->
+  <div id="creditsScreen" class="start-overlay hidden">
+    <div class="glass-panel start-card">
+      <h2>📜 Credits</h2>
+      <div class="credits-content">
+        <p>Entwickelt von: SirrRoyale</p>
+        <p>Design & Konzept: CuzImRic</p>
+      </div>
+      <button id="backToMenuBtn" class="sim-btn restart-btn">⬅️ Zurück</button>
+    </div>
+  </div>
+
+  <!-- Start Screen Overlay -->
+  <div id="startScreen" class="start-overlay hidden">
+    <div class="glass-panel start-card">
+      <h1>Willkommen zur Blutzucker Simulation</h1>
       <p>Bitte wähle deinen Körpertyp für die Simulation:</p>
       <div class="body-type-grid">
         <button class="body-type-btn" data-type="sporty" data-rate="-5">
@@ -52,7 +75,7 @@
     <header class="glass-panel header-panel">
       <div class="header-left">
         <div class="title-section">
-          <h1>Blutzucker Simulator</h1>
+          <h1 id="headerTitle">Blutzucker Simulator</h1>
           <p class="subtitle">Interaktives 24h Modell</p>
           <div id="healthStatus" class="health-status">OK</div>
         </div>
@@ -93,24 +116,16 @@
 
       <div class="header-right">
         <!-- Card: Steuerung -->
-        <div class="header-card control-card-small">
-          <h3>⚙️ Steuerung</h3>
-          <div class="simulation-controls">
-            <button id="nextHourBtn" class="sim-btn">Next Hour (+1h)</button>
-            <div class="auto-run-group">
-              <button id="autoRunBtn" class="sim-btn secondary">Auto-Run</button>
-              <input type="range" id="speedSlider" min="10" max="500" value="100" title="Tempo">
+        <div class="header-card controls-card-compact">
+          <div class="controls-row">
+            <button id="nextHourBtn" class="sim-btn icon-btn" title="Nächste Stunde (+1h)">🕒 +1h</button>
+            <button id="autoRunBtn" class="sim-btn icon-btn secondary" title="Auto-Run">▶ Run</button>
+            <div class="speed-control">
+              <span class="speed-icon">⚡</span>
+              <input type="range" id="speedSlider" min="10" max="500" value="100" title="Geschwindigkeit">
             </div>
-            <button id="resetBtn" class="sim-btn danger">Reset</button>
+            <button id="resetBtn" class="sim-btn icon-btn danger" title="Simulation Zurücksetzen">🔄</button>
           </div>
-        </div>
-
-        <!-- Card: Logbuch -->
-        <div class="header-card log-card-header">
-          <h3>📝 Logbuch</h3>
-          <ul id="eventLog">
-            <!-- Events will be added here -->
-          </ul>
         </div>
       </div>
     </header>
@@ -121,28 +136,65 @@
       <!-- Left Column: Actions -->
       <div class="side-panel left-panel">
         <!-- Card 1: Essen -->
-        <div class="control-card">
-          <h3>🍎 Essen</h3>
-          <div class="control-group">
-            <label for="carbsInput">Kohlenhydrate (g)</label>
-            <div class="input-wrapper">
-              <input type="range" id="carbsSlider" min="0" max="100" step="5" value="0">
-              <input type="number" id="carbsInput" min="0" max="200" value="0">
+        <div class="control-card collapsible-card">
+          <div class="card-header">
+            <h3>🍎 Essen</h3>
+            <button class="collapse-toggle" aria-label="Toggle Card">▼</button>
+          </div>
+          <div class="card-content">
+            <div class="control-group">
+              <label for="mealType">Mahlzeitentyp</label>
+              <select id="mealType" class="sim-select">
+                <option value="FAST">Süßigkeiten (Schnell)</option>
+                <option value="NORMAL" selected>Mahlzeit (Normal)</option>
+                <option value="SLOW">Vollkorn (Langsam)</option>
+              </select>
+              <label for="carbsInput">Kohlenhydrate (g)</label>
+              <div class="input-wrapper">
+                <input type="number" id="carbsInput" min="0" max="200" value="0">
+              </div>
+              <button id="eatBtn" class="action-btn eat">Essen</button>
             </div>
-            <button id="eatBtn" class="action-btn eat">Essen</button>
           </div>
         </div>
 
         <!-- Card 2: Insulin -->
-        <div class="control-card">
-          <h3>💉 Insulin</h3>
-          <div class="control-group">
-            <label for="insulinInput">Insulin (IE)</label>
-            <div class="input-wrapper">
-              <input type="range" id="insulinSlider" min="0" max="20" step="0.5" value="0">
-              <input type="number" id="insulinInput" min="0" max="50" step="0.5" value="0">
+        <div class="control-card collapsible-card">
+          <div class="card-header">
+            <h3>💉 Insulin</h3>
+            <button class="collapse-toggle" aria-label="Toggle Card">▼</button>
+          </div>
+          <div class="card-content">
+            <div class="control-group">
+              <label for="insulinType">Insulintyp</label>
+              <select id="insulinType" class="sim-select">
+                <option value="BOLUS" selected>Bolus (Schnell)</option>
+                <option value="BASAL">Basal (Verzögert)</option>
+              </select>
+              <label for="insulinInput">Insulin (IE)</label>
+              <div class="input-wrapper">
+                <input type="number" id="insulinInput" min="0" max="50" step="0.5" value="0">
+              </div>
+              <button id="injectBtn" class="action-btn inject">Spritzen</button>
             </div>
-            <button id="injectBtn" class="action-btn inject">Spritzen</button>
+          </div>
+        </div>
+
+        <!-- Card 3: Sport -->
+        <div class="control-card collapsible-card">
+          <div class="card-header">
+            <h3>🏃 Bewegung</h3>
+            <button class="collapse-toggle" aria-label="Toggle Card">▼</button>
+          </div>
+          <div class="card-content">
+            <div class="control-group">
+              <label>Aktivität wählen</label>
+              <div class="sport-btn-grid">
+                <button class="sport-btn" data-type="LIGHT">🚶 Spaziergang</button>
+                <button class="sport-btn" data-type="MEDIUM">🏃 Joggen</button>
+                <button class="sport-btn" data-type="HEAVY">🏋️ Intensiv</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -158,6 +210,32 @@
               <button id="respawnBtn" class="sim-btn restart-btn">🔄 Neustart</button>
               <button id="reviveBtn" class="sim-btn revive-btn">🧪 Notfall-Spritze (Revive)</button>
             </div>
+          </div>
+        </div>
+
+        <!-- 24h Results Overlay -->
+        <div id="resultsOverlay" class="death-overlay hidden">
+          <div class="glass-panel start-card results-card">
+            <h2>📅 24h Auswertung</h2>
+            <div class="results-grid">
+              <div class="res-item">
+                <span class="res-label">Zeit im Zielbereich:</span>
+                <span id="resTIR" class="res-value">--</span>
+              </div>
+              <div class="res-item">
+                <span class="res-label">Hypo-Ereignisse:</span>
+                <span id="resHypos" class="res-value">--</span>
+              </div>
+              <div class="res-item">
+                <span class="res-label">Hyper-Ereignisse:</span>
+                <span id="resHypers" class="res-value">--</span>
+              </div>
+              <div class="res-score">
+                <span class="res-label">Bewertung:</span>
+                <span id="resGrade" class="res-grade">--</span>
+              </div>
+            </div>
+            <button class="sim-btn restart-btn">🔄 Nächster Tag / Reset</button>
           </div>
         </div>
       </section>
