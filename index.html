@@ -18,22 +18,11 @@
       <h1>Blutzucker Simulation</h1>
       <div class="menu-btn-group">
         <button id="startGameBtn" class="sim-btn menu-large-btn">🎮 START</button>
-        <button id="showCreditsBtn" class="sim-btn menu-large-btn secondary">📜 CREDITS</button>
       </div>
     </div>
   </div>
 
-  <!-- Credits Screen Overlay -->
-  <div id="creditsScreen" class="start-overlay hidden">
-    <div class="glass-panel start-card">
-      <h2>📜 Credits</h2>
-      <div class="credits-content">
-        <p>Entwickelt von: SirrRoyale</p>
-        <p>Design & Konzept: CuzImRic</p>
-      </div>
-      <button id="backToMenuBtn" class="sim-btn restart-btn">⬅️ Zurück</button>
-    </div>
-  </div>
+
 
   <!-- Start Screen Overlay -->
   <div id="startScreen" class="start-overlay hidden">
@@ -66,11 +55,41 @@
           <span class="label">Diabetes Typ 1</span>
           <span class="detail">+2 mg/dL pro Std.</span>
         </button>
+        <button class="body-type-btn" data-type="custom" id="customTypeBtn">
+          <span class="icon">⚙️</span>
+          <span class="label">Benutzerdefiniert</span>
+          <span class="detail">Eigene Werte</span>
+        </button>
+      </div>
+
+      <!-- Custom Parameters (Hidden Initially) -->
+      <div id="customParams" class="custom-params-area hidden">
+        <div class="custom-input-group">
+          <div class="c-input">
+            <label>Metabolismus (mg/dL/h)</label>
+            <input type="number" id="customRate" value="-3" step="0.5">
+          </div>
+          <div class="c-input">
+            <label>ISF (Empfindlichkeit)</label>
+            <input type="number" id="customISF" value="40" step="1">
+          </div>
+          <div class="c-input">
+            <label>ICR (KH-Verhältnis)</label>
+            <input type="number" id="customICR" value="10" step="0.5">
+          </div>
+        </div>
+        <button id="startCustomBtn" class="sim-btn start-custom-btn">🚀 Simulation Starten</button>
       </div>
     </div>
   </div>
 
   <div class="dashboard-container blur-background">
+    <!-- Notification Zone for Events -->
+    <div id="eventNotification" class="event-notification hidden">
+      <span class="event-icon">💡</span>
+      <span id="eventMessage" class="event-msg">Random Event!</span>
+    </div>
+
     <!-- Header Section: Stats & Time & Controls & Log -->
     <header class="glass-panel header-panel">
       <div class="header-left">

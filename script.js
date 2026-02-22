@@ -35,12 +35,12 @@
       BASAL: { label: "Basal", duration: 1440, peak: 360 } // 24h
     },
 
-    // Random Events (Higher Frequencies)
+    // Random Events (Lower Frequencies as requested)
     EVENTS: [
-      { id: 'stress', label: "Stress", probability: 0.05, effect: 20, msg: "Stress lässt den Zucker steigen! 😰" },
-      { id: 'snack', label: "Snack", probability: 0.03, effect: 15, msg: "Heimlicher Snack ohne Insulin! 🍪" },
-      { id: 'sick', label: "Infekt", probability: 0.01, effect: 50, msg: "Ein Infekt bahnt sich an... 🤒" },
-      { id: 'forgot', label: "Sport?", probability: 0.02, effect: -20, msg: "Längere Laufwege als gedacht. 🚶" }
+      { id: 'stress', label: "Stress", probability: 0.015, effect: 15, msg: "Stress lässt den Zucker steigen! 😰" },
+      { id: 'snack', label: "Snack", probability: 0.01, effect: 10, msg: "Heimlicher Snack ohne Insulin! 🍪" },
+      { id: 'sick', label: "Infekt", probability: 0.005, effect: 30, msg: "Ein Infekt bahnt sich an... 🤒" },
+      { id: 'forgot', label: "Sport?", probability: 0.008, effect: -15, msg: "Längere Laufwege als gedacht. 🚶" }
     ]
   };
 
@@ -294,9 +294,27 @@
       CONFIG.EVENTS.forEach(ev => {
         if (Math.random() < ev.probability) {
           const effect = parseFloat(ev.effect);
-          if (!isNaN(effect)) this.bg += effect;
+          if (!isNaN(effect)) {
+            this.bg += effect;
+            this.showNotification(ev.msg);
+          }
         }
       });
+    }
+
+    showNotification(msg) {
+      const el = document.getElementById('eventNotification');
+      const msgEl = document.getElementById('eventMessage');
+      if (el && msgEl) {
+        msgEl.textContent = msg;
+        el.classList.remove('hidden');
+
+        // Hide after 5 seconds
+        if (this.notifTimeout) clearTimeout(this.notifTimeout);
+        this.notifTimeout = setTimeout(() => {
+          el.classList.add('hidden');
+        }, 5000);
+      }
     }
 
     checkHealth() {
@@ -633,16 +651,13 @@
   document.addEventListener('DOMContentLoaded', () => {
     const sim = new Simulation();
 
-    // --- Navigation Logic ---
+    // --- Navigation UI Elements ---
     const mainMenu = document.getElementById('mainMenu');
-    const creditsScreen = document.getElementById('creditsScreen');
     const startScreen = document.getElementById('startScreen');
     const dashboard = document.querySelector('.dashboard-container');
+    const bodyTypeDisplay = document.getElementById('bodyTypeDisplay');
 
     const startGameBtn = document.getElementById('startGameBtn');
-    const showCreditsBtn = document.getElementById('showCreditsBtn');
-    const backToMenuBtn = document.getElementById('backToMenuBtn');
-
     if (startGameBtn) {
       startGameBtn.addEventListener('click', () => {
         mainMenu.classList.add('hidden');
@@ -650,45 +665,59 @@
       });
     }
 
-    if (showCreditsBtn) {
-      showCreditsBtn.addEventListener('click', () => {
-        mainMenu.classList.add('hidden');
-        creditsScreen.classList.remove('hidden');
-      });
-    }
-
-    if (backToMenuBtn) {
-      backToMenuBtn.addEventListener('click', () => {
-        creditsScreen.classList.add('hidden');
-        mainMenu.classList.remove('hidden');
-      });
-    }
-
     // --- Start Screen Logic (Character Selection) ---
     const typeButtons = document.querySelectorAll('.body-type-btn');
-    const bodyTypeDisplay = document.getElementById('bodyTypeDisplay');
 
     typeButtons.forEach(btn => {
       btn.addEventListener('click', () => {
+        const type = btn.dataset.type;
+        const customParams = document.getElementById('customParams');
+
+        if (type === 'custom') {
+          customParams.classList.remove('hidden');
+          // Deselect others visually if needed, but simple toggle is fine
+          return;
+        }
+
+        customParams.classList.add('hidden');
         const rate = parseFloat(btn.dataset.rate);
         sim.metabolismRate = rate;
         const typeName = btn.querySelector('.label').textContent;
         const icon = btn.querySelector('.icon').textContent;
 
-        // Hide overlays
-        startScreen.classList.add('hidden');
-        dashboard.classList.remove('blur-background');
-
-        // Update Header Display
-        if (bodyTypeDisplay) {
-          bodyTypeDisplay.querySelector('.icon').textContent = icon;
-          bodyTypeDisplay.querySelector('.text').textContent = typeName;
-        }
-
-        // Log selection
-        sim.log(`Simulation gestartet. Körpertyp: ${typeName} (${rate > 0 ? '+' : ''}${rate} mg/dL/h)`);
+        startGame(typeName, icon, rate);
       });
     });
+
+    const startCustomBtn = document.getElementById('startCustomBtn');
+    if (startCustomBtn) {
+      startCustomBtn.addEventListener('click', () => {
+        const rate = parseFloat(document.getElementById('customRate').value);
+        const isf = parseFloat(document.getElementById('customISF').value);
+        const icr = parseFloat(document.getElementById('customICR').value);
+
+        if (!isNaN(isf)) CONFIG.ISF = isf;
+        if (!isNaN(icr)) CONFIG.ICR = icr;
+        sim.metabolismRate = rate;
+
+        startGame("Benutzerdefiniert", "⚙️", rate);
+      });
+    }
+
+    function startGame(typeName, icon, rate) {
+      // Hide overlays
+      startScreen.classList.add('hidden');
+      dashboard.classList.remove('blur-background');
+
+      // Update Header Display
+      if (bodyTypeDisplay) {
+        bodyTypeDisplay.querySelector('.icon').textContent = icon;
+        bodyTypeDisplay.querySelector('.text').textContent = typeName;
+      }
+
+      // Log selection (if log existed, otherwise just console or nothing)
+      // sim.log(`Simulation gestartet. Körpertyp: ${typeName} (${rate > 0 ? '+' : ''}${rate} mg/dL/h)`);
+    }
 
     // --- Collapsible Cards Logic (Accordion) ---
     const collapsibles = document.querySelectorAll('.collapsible-card');
