@@ -234,7 +234,8 @@
         { id: 'night_owl', icon: '🦉', title: 'Nachteule', desc: 'Simulation nach 22:00 Uhr aktiv.' },
         { id: 'hypo_profi', icon: '🍬', title: 'Hypo-Profi', desc: 'Behandle eine Unterzuckerung erfolgreich zurück in den Zielbereich.' },
         { id: 'discipline', icon: '🥗', title: 'Disziplin', desc: 'Verpasse 24 Stunden lang keine Mahlzeit.' },
-        { id: 'marathon', icon: '🏁', title: 'Marathon', desc: 'Erreiche den 2. Tag im Überlebensmodus.' }
+        { id: 'marathon', icon: '🏁', title: 'Marathon', desc: 'Erreiche den 2. Tag im Überlebensmodus.' },
+        { id: 'platinum', icon: '💎', title: 'Platin-Trophäe', desc: 'Sammle alle anderen Erfolge.' }
       ];
 
       this.initUI();
@@ -398,7 +399,7 @@
       this.achievements.forEach(ach => {
         const isEarned = earned.includes(ach.id);
         const div = document.createElement('div');
-        div.className = `achievement-item ${isEarned ? '' : 'locked'}`;
+        div.className = `achievement-item ${isEarned ? '' : 'locked'} ${ach.id === 'platinum' ? 'platinum' : ''}`;
         div.innerHTML = `
           <div class="achievement-icon">${ach.icon}</div>
           <div class="achievement-info">
@@ -426,6 +427,22 @@
         if (ach && this.sim) {
           this.sim.showNotification(`ERFOLG FREIGESCHALTET: ${ach.icon} ${ach.title}`);
         }
+
+        // Check for Platinum
+        this.checkPlatinum();
+      }
+    }
+
+    checkPlatinum() {
+      if (!this.currentUser || this.currentUser.achievements.includes('platinum')) return;
+
+      const normalAchIds = this.achievements.filter(a => a.id !== 'platinum').map(a => a.id);
+      const earnedIds = this.currentUser.achievements;
+
+      const allNormalEarned = normalAchIds.every(id => earnedIds.includes(id));
+
+      if (allNormalEarned) {
+        this.unlockAchievement('platinum');
       }
     }
 
@@ -1074,6 +1091,14 @@
       startGameBtn.addEventListener('click', () => {
         mainMenu.classList.add('hidden');
         startScreen.classList.remove('hidden');
+      });
+    }
+
+    const backToMainMenuBtn = document.getElementById('backToMainMenuBtn');
+    if (backToMainMenuBtn) {
+      backToMainMenuBtn.addEventListener('click', () => {
+        startScreen.classList.add('hidden');
+        mainMenu.classList.remove('hidden');
       });
     }
 
