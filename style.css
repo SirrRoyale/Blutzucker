@@ -1043,6 +1043,429 @@ body.dark-mode .start-card {
   background: rgba(30, 30, 30, 0.95);
 }
 
+/* Account Positioning */
+.account-top-right {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+}
+
+.account-trigger {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--panel-border);
+  padding: 8px 16px;
+  border-radius: 40px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+body.dark-mode .account-trigger {
+  background: rgba(45, 45, 45, 0.82);
+}
+
+.account-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  border-color: var(--accent-color);
+}
+
+.user-name-preview {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-color);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--accent-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.user-avatar.large {
+  width: 80px;
+  height: 80px;
+  font-size: 3rem;
+  margin: 0 auto 15px;
+}
+
+/* Achievement Positioning */
+.achievement-top-left {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10000;
+}
+
+.achievement-count-preview {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent-color);
+}
+
+/* Achievement Lists */
+.achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 5px 10px 20px 5px;
+  margin-bottom: 20px;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.clear-btn-small {
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+  border: 1px solid rgba(255, 68, 68, 0.2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-btn-small:hover {
+  background: #ff4444;
+  color: white;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.h-delete-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 5px;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.h-delete-btn:hover {
+  color: #ff4444;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 14px;
+  border: 1px solid var(--panel-border);
+  transition: all 0.3s;
+}
+
+body.dark-mode .achievement-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.achievement-item.locked {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.achievement-icon {
+  font-size: 2rem;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+body.dark-mode .achievement-icon {
+  background: #2d2d2d;
+}
+
+.achievement-info {
+  flex: 1;
+  text-align: left;
+}
+
+.achievement-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+}
+
+.achievement-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #777;
+}
+
+body.dark-mode .achievement-info p {
+  color: #aaa;
+}
+
+.achievement-status {
+  font-size: 1.2rem;
+}
+
+/* Auth Card Styles */
+.auth-card {
+  max-width: 450px !important;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 5px;
+  border-radius: 12px;
+}
+
+body.dark-mode .auth-tabs {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: #777;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.auth-tab.active {
+  background: white;
+  color: var(--accent-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+body.dark-mode .auth-tab.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: left;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+}
+
+body.dark-mode .auth-form input {
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 25px 0;
+  color: #999;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.auth-divider span {
+  margin: 0 10px;
+}
+
+.google-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--panel-border);
+  background: white;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 15px;
+}
+
+body.dark-mode .google-btn {
+  background: #2d2d2d;
+  color: white;
+}
+
+.google-btn:hover {
+  background: #f8f8f8;
+  transform: translateY(-1px);
+}
+
+body.dark-mode .google-btn:hover {
+  background: #383838;
+}
+
+.google-btn img {
+  width: 20px;
+}
+
+/* Profile Card Styles */
+.profile-card {
+  max-width: 550px !important;
+  text-align: center;
+}
+
+.subtitle {
+  color: #888;
+  margin-top: -10px;
+  margin-bottom: 25px;
+}
+
+.profile-stats-row {
+  display: flex;
+  justify-content: space-around;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+}
+
+body.dark-mode .profile-stats-row {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.p-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.p-label {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.p-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent-color);
+}
+
+.history-section {
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.history-section h3 {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  border-bottom: 2px solid var(--panel-border);
+  padding-bottom: 10px;
+}
+
+.history-list {
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 5px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+}
+
+body.dark-mode .history-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.h-date {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+body.dark-mode .h-date {
+  color: #aaa;
+}
+
+.h-grade {
+  font-weight: 900;
+  font-size: 1.2rem;
+}
+
+.h-score {
+  font-size: 0.8rem;
+  font-weight: bold;
+  opacity: 0.8;
+}
+
+.empty-msg {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.profile-actions .sim-btn {
+  flex: 1;
+}
+
 .start-card h1 {
   margin-top: 0;
   font-size: 2.5rem;

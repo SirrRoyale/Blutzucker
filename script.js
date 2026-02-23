@@ -217,8 +217,332 @@
 
 
 
-  // --- Main Engine ---
+  // --- Auth & Profile Manager ---
+  class AuthManager {
+    constructor(simulation) {
+      this.sim = simulation;
+      this.users = JSON.parse(localStorage.getItem('sim_users') || '{}');
+      this.currentUser = JSON.parse(localStorage.getItem('sim_current_user') || 'null');
 
+      this.achievements = [
+        { id: 'persistent', icon: '🤝', title: 'Dranbleiber', desc: 'Erstelle ein Konto und melde dich an.' },
+        { id: 'survive_day', icon: '🏆', title: 'Überlebenskünstler', desc: 'Überlebe einen vollen Tag in der Simulation.' },
+        { id: 'perfect_tir', icon: '🎯', title: 'Meister der Zeit', desc: 'Erreiche 100% Time in Range für einen Tag.' },
+        { id: 'grade_a', icon: '📜', title: 'Musterschüler', desc: 'Erreiche die Bestnote A bei der Tagesauswertung.' },
+        { id: 'sporty', icon: '🏃', title: 'Sportskanone', desc: 'Schließe insgesamt 5 sportliche Aktivitäten ab.' },
+        { id: 'early_bird', icon: '🌅', title: 'Frühaufsteher', desc: 'Starte eine Simulation vor 08:00 Uhr.' },
+        { id: 'night_owl', icon: '🦉', title: 'Nachteule', desc: 'Simulation nach 22:00 Uhr aktiv.' },
+        { id: 'hypo_profi', icon: '🍬', title: 'Hypo-Profi', desc: 'Behandle eine Unterzuckerung erfolgreich zurück in den Zielbereich.' },
+        { id: 'discipline', icon: '🥗', title: 'Disziplin', desc: 'Verpasse 24 Stunden lang keine Mahlzeit.' },
+        { id: 'marathon', icon: '🏁', title: 'Marathon', desc: 'Erreiche den 2. Tag im Überlebensmodus.' }
+      ];
+
+      this.initUI();
+      this.updateStatusUI();
+    }
+
+    initUI() {
+      // Elements
+      this.els = {
+        openBtn: document.getElementById('openAccountBtn'),
+        authMenu: document.getElementById('authMenu'),
+        profileMenu: document.getElementById('profileMenu'),
+        closeAuth: document.getElementById('closeAuthBtn'),
+        closeProfile: document.getElementById('closeProfileBtn'),
+        authForm: document.getElementById('authForm'),
+        tabLogin: document.getElementById('showLoginTab'),
+        tabRegister: document.getElementById('showRegisterTab'),
+        logoutBtn: document.getElementById('logoutBtn'),
+        historyList: document.getElementById('historyList'),
+        usernameDisplay: document.getElementById('profileUsername'),
+        emailDisplay: document.getElementById('profileEmail'),
+        simCount: document.getElementById('pSimCount'),
+        bestGrade: document.getElementById('pBestGrade'),
+        namePreview: document.querySelector('.user-name-preview'),
+        googleBtn: document.getElementById('googleAuthBtn'),
+        // Achievements
+        openAchBtn: document.getElementById('openAchievementsBtn'),
+        achMenu: document.getElementById('achievementsMenu'),
+        achList: document.getElementById('achievementsList'),
+        closeAch: document.getElementById('closeAchievementsBtn'),
+        closeAchBottom: document.getElementById('closeAchievementsBtnBottom'),
+        achCountPreview: document.querySelector('.achievement-count-preview'),
+        clearHistoryBtn: document.getElementById('clearHistoryBtn')
+      };
+
+      this.mode = 'login'; // 'login' or 'register'
+
+      // Listeners
+      if (this.els.openBtn) {
+        this.els.openBtn.addEventListener('click', () => {
+          if (this.currentUser) this.openProfile();
+          else this.openAuth();
+        });
+      }
+
+      [this.els.closeAuth, this.els.closeProfile].forEach(btn => {
+        if (btn) btn.addEventListener('click', () => this.closeAll());
+      });
+
+      if (this.els.tabLogin) {
+        this.els.tabLogin.addEventListener('click', () => this.switchMode('login'));
+      }
+      if (this.els.tabRegister) {
+        this.els.tabRegister.addEventListener('click', () => this.switchMode('register'));
+      }
+
+      if (this.els.authForm) {
+        this.els.authForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          this.handleAuth();
+        });
+      }
+
+      if (this.els.logoutBtn) {
+        this.els.logoutBtn.addEventListener('click', () => this.logout());
+      }
+
+      if (this.els.googleBtn) {
+        this.els.googleBtn.addEventListener('click', () => {
+          alert("Google Login ist in dieser Demo-Version nur ein Platzhalter. Bitte registriere dich normal.");
+        });
+      }
+
+      if (this.els.openAchBtn) {
+        this.els.openAchBtn.addEventListener('click', () => {
+          if (this.currentUser) this.openAchievements();
+          else alert("Bitte melde dich an, um deine Erfolge zu sehen.");
+        });
+      }
+
+      [this.els.closeAch, this.els.closeAchBottom].forEach(btn => {
+        if (btn) btn.addEventListener('click', () => {
+          if (this.els.achMenu) this.els.achMenu.classList.add('hidden');
+        });
+      });
+
+      if (this.els.clearHistoryBtn) {
+        this.els.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
+      }
+    }
+
+    switchMode(mode) {
+      this.mode = mode;
+      const title = document.getElementById('authTitle');
+      if (title) title.textContent = mode === 'login' ? 'Anmelden' : 'Registrieren';
+      if (this.els.tabLogin) this.els.tabLogin.classList.toggle('active', mode === 'login');
+      if (this.els.tabRegister) this.els.tabRegister.classList.toggle('active', mode === 'register');
+      const submit = document.getElementById('authSubmitBtn');
+      if (submit) submit.textContent = mode === 'login' ? 'Anmelden' : 'Konto erstellen';
+    }
+
+    handleAuth() {
+      const email = document.getElementById('authEmail').value;
+      const pass = document.getElementById('authPassword').value;
+
+      if (this.mode === 'register') {
+        if (this.users[email]) {
+          alert("Diese Email ist bereits registriert.");
+          return;
+        }
+        this.users[email] = {
+          email,
+          pass,
+          history: [],
+          stats: { sims: 0, best: '--' },
+          achievements: []
+        };
+        this.saveUsers();
+        alert("Konto erstellt! Du kannst dich jetzt anmelden.");
+        this.switchMode('login');
+      } else {
+        const user = this.users[email];
+        if (user && user.pass === pass) {
+          this.currentUser = user;
+          if (!this.currentUser.achievements) this.currentUser.achievements = [];
+
+          localStorage.setItem('sim_current_user', JSON.stringify(user));
+          this.unlockAchievement('persistent');
+          this.updateStatusUI();
+          this.closeAll();
+          sounds.play('click');
+        } else {
+          alert("Ungültige Email oder Passwort.");
+        }
+      }
+    }
+
+    logout() {
+      this.currentUser = null;
+      localStorage.removeItem('sim_current_user');
+      this.updateStatusUI();
+      this.closeAll();
+      sounds.play('click');
+    }
+
+    openAuth() {
+      if (this.els.authMenu) this.els.authMenu.classList.remove('hidden');
+    }
+
+    openAchievements() {
+      this.renderAchievements();
+      if (this.els.achMenu) this.els.achMenu.classList.remove('hidden');
+    }
+
+    renderAchievements() {
+      if (!this.els.achList) return;
+      this.els.achList.innerHTML = '';
+
+      const earned = this.currentUser ? (this.currentUser.achievements || []) : [];
+
+      this.achievements.forEach(ach => {
+        const isEarned = earned.includes(ach.id);
+        const div = document.createElement('div');
+        div.className = `achievement-item ${isEarned ? '' : 'locked'}`;
+        div.innerHTML = `
+          <div class="achievement-icon">${ach.icon}</div>
+          <div class="achievement-info">
+            <h4>${ach.title}</h4>
+            <p>${ach.desc}</p>
+          </div>
+          <div class="achievement-status">${isEarned ? '✅' : '🔒'}</div>
+        `;
+        this.els.achList.appendChild(div);
+      });
+    }
+
+    unlockAchievement(id) {
+      if (!this.currentUser) return;
+      if (!this.currentUser.achievements) this.currentUser.achievements = [];
+
+      if (!this.currentUser.achievements.includes(id)) {
+        this.currentUser.achievements.push(id);
+        this.users[this.currentUser.email] = this.currentUser;
+        this.saveUsers();
+        localStorage.setItem('sim_current_user', JSON.stringify(this.currentUser));
+        this.updateStatusUI();
+
+        const ach = this.achievements.find(a => a.id === id);
+        if (ach && this.sim) {
+          this.sim.showNotification(`ERFOLG FREIGESCHALTET: ${ach.icon} ${ach.title}`);
+        }
+      }
+    }
+
+    openProfile() {
+      if (!this.currentUser) return;
+      if (this.els.usernameDisplay) this.els.usernameDisplay.textContent = this.currentUser.email.split('@')[0];
+      if (this.els.emailDisplay) this.els.emailDisplay.textContent = this.currentUser.email;
+      if (this.els.simCount) this.els.simCount.textContent = this.currentUser.history.length;
+
+      const grades = this.currentUser.history.map(h => h.grade);
+      if (this.els.bestGrade) {
+        this.els.bestGrade.textContent = grades.includes('A') ? 'A' : (grades.includes('B') ? 'B' : (grades.length ? grades[0] : '--'));
+      }
+
+      this.renderHistory();
+      if (this.els.profileMenu) this.els.profileMenu.classList.remove('hidden');
+    }
+
+    renderHistory() {
+      if (!this.els.historyList) return;
+      this.els.historyList.innerHTML = '';
+      if (this.currentUser.history.length === 0) {
+        this.els.historyList.innerHTML = '<p class="empty-msg">Noch keine Auswertungen vorhanden.</p>';
+        return;
+      }
+
+      // We slice() to get a copy, then reverse for display, but we need the real index for deletion
+      const indexedHistory = this.currentUser.history.map((item, index) => ({ item, index }));
+
+      indexedHistory.reverse().forEach(entry => {
+        const item = entry.item;
+        const index = entry.index;
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+          <span class="h-date">${item.date}</span>
+          <span class="h-grade grade-${item.grade.toLowerCase()}">${item.grade}</span>
+          <span class="h-score">${item.tir}% TiR</span>
+          <button class="h-delete-btn" title="Löschen">🗑️</button>
+        `;
+
+        div.querySelector('.h-delete-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.deleteResult(index);
+        });
+
+        this.els.historyList.appendChild(div);
+      });
+    }
+
+    deleteResult(index) {
+      if (!this.currentUser) return;
+      if (confirm("Möchtest du diese Auswertung wirklich löschen?")) {
+        this.currentUser.history.splice(index, 1);
+        this.saveCurrentUserChange();
+        this.openProfile(); // Re-render everything
+        sounds.play('click');
+      }
+    }
+
+    clearHistory() {
+      if (!this.currentUser) return;
+      if (confirm("Möchtest du ALLES löschen? Das kann nicht rückgängig gemacht werden.")) {
+        this.currentUser.history = [];
+        this.saveCurrentUserChange();
+        this.openProfile();
+        sounds.play('click');
+      }
+    }
+
+    saveCurrentUserChange() {
+      this.users[this.currentUser.email] = this.currentUser;
+      this.saveUsers();
+      localStorage.setItem('sim_current_user', JSON.stringify(this.currentUser));
+    }
+
+    saveResult(stats) {
+      if (!this.currentUser) return;
+
+      const result = {
+        date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }),
+        grade: stats.grade,
+        tir: stats.tir,
+        hypos: stats.hypos,
+        hypers: stats.hypers
+      };
+
+      this.currentUser.history.push(result);
+      this.users[this.currentUser.email] = this.currentUser;
+      this.saveUsers();
+      localStorage.setItem('sim_current_user', JSON.stringify(this.currentUser));
+    }
+
+    saveUsers() {
+      localStorage.setItem('sim_users', JSON.stringify(this.users));
+    }
+
+    updateStatusUI() {
+      if (this.currentUser) {
+        if (this.els.namePreview) this.els.namePreview.textContent = this.currentUser.email.split('@')[0];
+        if (this.els.achCountPreview) {
+          const earned = (this.currentUser.achievements || []).length;
+          this.els.achCountPreview.textContent = `${earned}/${this.achievements.length}`;
+        }
+      } else {
+        if (this.els.namePreview) this.els.namePreview.textContent = "Nicht angemeldet";
+        if (this.els.achCountPreview) this.els.achCountPreview.textContent = "--";
+      }
+    }
+
+    closeAll() {
+      if (this.els.authMenu) this.els.authMenu.classList.add('hidden');
+      if (this.els.profileMenu) this.els.profileMenu.classList.add('hidden');
+    }
+  }
+
+  // --- Main Engine ---
   class Simulation {
     constructor() {
       this.bg = 100;
@@ -234,6 +558,9 @@
       this.isDead = false;
       this.autoRunInterval = null;
       this.autoRunSpeed = 100;
+
+      this.daysSurvived = 0;
+      this.activityCount = 0;
 
       this.initChart();
       this.updateUI();
@@ -425,11 +752,23 @@
     addActivity(type) {
       if (this.isDead) return;
       this.activeActivities.push(new SportEffect(type));
+      this.activityCount++;
+      if (this.auth && this.activityCount >= 5) {
+        this.auth.unlockAchievement('sporty');
+      }
     }
 
     showDaySummary() {
       const stats = this.tracker.getScore();
       this.stopAutoRun();
+
+      this.daysSurvived++;
+      if (this.auth) {
+        this.auth.saveResult(stats);
+        this.auth.unlockAchievement('survive_day');
+        if (stats.tir === 100) this.auth.unlockAchievement('perfect_tir');
+        if (stats.grade === 'A') this.auth.unlockAchievement('grade_a');
+      }
 
       const overlay = document.getElementById('resultsOverlay');
       if (overlay) {
@@ -438,11 +777,13 @@
         document.getElementById('resHypers').textContent = stats.hypers;
 
         const gradeEl = document.getElementById('resGrade');
-        gradeEl.textContent = stats.grade;
-        // Remove old classes
-        gradeEl.classList.remove('grade-a', 'grade-b', 'grade-c', 'grade-d', 'grade-f');
-        // Add new class
-        gradeEl.classList.add(`grade-${stats.grade.toLowerCase()}`);
+        if (gradeEl) {
+          gradeEl.textContent = stats.grade;
+          // Remove old classes
+          gradeEl.classList.remove('grade-a', 'grade-b', 'grade-c', 'grade-d', 'grade-f');
+          // Add new class
+          gradeEl.classList.add(`grade-${stats.grade.toLowerCase()}`);
+        }
 
         overlay.classList.remove('hidden');
       }
@@ -590,10 +931,27 @@
     }
 
     initChart() {
-      const ctx = document.getElementById('bgChart').getContext('2d');
+      const canvas = document.getElementById('bgChart');
+      if (!canvas) {
+        console.warn("Chart canvas element not found.");
+        return;
+      }
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.warn("Could not get 2D context for chart.");
+        return;
+      }
 
       // Initial Data
-      this.history.push({ x: this.formatTime(), y: this.bg });
+      if (this.history.length === 0) {
+        this.history.push({ x: this.formatTime(), y: this.bg });
+      }
+
+      if (typeof Chart === 'undefined') {
+        console.error("Chart.js is not loaded. Retrying in 1s...");
+        setTimeout(() => this.initChart(), 1000);
+        return;
+      }
 
       const annotationPlugin = window['chartjs-plugin-annotation'];
       const plugins = { legend: { display: false } };
@@ -637,41 +995,46 @@
         };
       }
 
-      this.chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [this.formatTime()],
-          datasets: [{
-            label: 'Blutzucker (mg/dL)',
-            data: [this.bg],
-            borderColor: '#00c853', // Match new accent
-            backgroundColor: 'rgba(0, 200, 83, 0.2)', // Slightly stronger fill
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false, // Disable default chart animations for performance
-          interaction: { mode: 'index', intersect: false },
-          scales: {
-            y: {
-              min: 0,
-              max: 400, // Look above 400 allows seeing high spikes
-              grid: { color: 'rgba(0,0,0,0.05)' }, // Light dark grid
-              ticks: { color: '#666' },
-            },
-            x: {
-              grid: { color: 'rgba(0,0,0,0.05)' },
-              ticks: { color: '#666', maxTicksLimit: 8 }
-            }
+      try {
+        if (this.chart) this.chart.destroy();
+        this.chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: this.history.map(h => h.x),
+            datasets: [{
+              label: 'Blutzucker (mg/dL)',
+              data: this.history.map(h => h.y),
+              borderColor: '#00c853',
+              backgroundColor: 'rgba(0, 200, 83, 0.2)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 0
+            }]
           },
-          plugins: plugins
-        }
-      });
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              y: {
+                min: 0,
+                max: 400,
+                grid: { color: 'rgba(0,0,0,0.05)' },
+                ticks: { color: '#666' },
+              },
+              x: {
+                grid: { color: 'rgba(0,0,0,0.05)' },
+                ticks: { color: '#666', maxTicksLimit: 8 }
+              }
+            },
+            plugins: plugins
+          }
+        });
+      } catch (err) {
+        console.error("Failed to initialize Chart:", err);
+      }
     }
 
     updateChartTheme(isDark) {
@@ -697,6 +1060,8 @@
   // --- App Initialization ---
   document.addEventListener('DOMContentLoaded', () => {
     const sim = new Simulation();
+    const auth = new AuthManager(sim);
+    sim.auth = auth;
 
     // --- Navigation UI Elements ---
     const mainMenu = document.getElementById('mainMenu');

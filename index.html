@@ -14,6 +14,18 @@
 <body>
   <!-- Main Menu Overlay -->
   <div id="mainMenu" class="start-overlay">
+    <div class="achievement-top-left">
+      <button id="openAchievementsBtn" class="account-trigger">
+        <div class="user-avatar">🏆</div>
+        <span class="achievement-count-preview">--</span>
+      </button>
+    </div>
+    <div class="account-top-right">
+      <button id="openAccountBtn" class="account-trigger">
+        <span class="user-name-preview">Nicht angemeldet</span>
+        <div class="user-avatar">👤</div>
+      </button>
+    </div>
     <div class="glass-panel start-card">
       <h1>Blutzucker Simulation</h1>
       <div class="menu-btn-group">
@@ -57,6 +69,94 @@
         </div>
       </div>
       <button id="closeSettingsBtn" class="sim-btn restart-btn">Speichern & Schließen</button>
+    </div>
+  </div>
+
+  <!-- Achievements Overlay -->
+  <div id="achievementsMenu" class="start-overlay hidden">
+    <div class="glass-panel start-card profile-card">
+      <div class="card-header">
+        <h1>🏆 Erfolge</h1>
+        <button id="closeAchievementsBtn" class="close-btn">×</button>
+      </div>
+      <p class="subtitle">Deine Meilensteine in der Simulation</p>
+
+      <div class="achievements-list" id="achievementsList">
+        <!-- Achievements will be injected here -->
+      </div>
+
+      <div class="profile-actions">
+        <button id="closeAchievementsBtnBottom" class="sim-btn">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Overlay -->
+  <div id="authMenu" class="start-overlay hidden">
+    <div class="glass-panel start-card auth-card">
+      <h1 id="authTitle">Anmelden</h1>
+      <div class="auth-tabs">
+        <button id="showLoginTab" class="auth-tab active">Login</button>
+        <button id="showRegisterTab" class="auth-tab">Registrieren</button>
+      </div>
+
+      <form id="authForm" class="auth-form">
+        <div class="settings-group">
+          <label>Email</label>
+          <input type="email" id="authEmail" placeholder="name@beispiel.de" required>
+        </div>
+        <div class="settings-group">
+          <label>Passwort</label>
+          <input type="password" id="authPassword" placeholder="••••••••" required>
+        </div>
+        <button type="submit" id="authSubmitBtn" class="sim-btn menu-large-btn">Bestätigen</button>
+      </form>
+
+      <div class="auth-divider"><span>ODER</span></div>
+
+      <button id="googleAuthBtn" class="google-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+        Mit Google anmelden
+      </button>
+
+      <button id="closeAuthBtn" class="sim-btn restart-btn secondary">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Profile Overlay -->
+  <div id="profileMenu" class="start-overlay hidden">
+    <div class="glass-panel start-card profile-card">
+      <div class="profile-header">
+        <div class="user-avatar large">👤</div>
+        <h1 id="profileUsername">Benutzerprofil</h1>
+        <p id="profileEmail" class="subtitle">email@beispiel.de</p>
+      </div>
+
+      <div class="profile-stats-row">
+        <div class="p-stat">
+          <span class="p-label">Simulationen</span>
+          <span id="pSimCount" class="p-value">0</span>
+        </div>
+        <div class="p-stat">
+          <span class="p-label">Beste Bewertung</span>
+          <span id="pBestGrade" class="p-value">--</span>
+        </div>
+      </div>
+
+      <div class="profile-history">
+        <div class="history-header">
+          <h3>Simulationen</h3>
+          <button id="clearHistoryBtn" class="clear-btn-small">Alle löschen</button>
+        </div>
+        <div id="historyList" class="history-list">
+          <!-- History items injected here -->
+        </div>
+      </div>
+
+      <div class="profile-actions">
+        <button id="logoutBtn" class="sim-btn danger">Abmelden</button>
+        <button id="closeProfileBtn" class="sim-btn restart-btn">Schließen</button>
+      </div>
     </div>
   </div>
 
