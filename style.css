@@ -599,6 +599,78 @@ body.dark-mode .body-type-badge {
   font-weight: 600;
 }
 
+/* Settings Content */
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin: 30px 0;
+  text-align: left;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-group label {
+  font-weight: bold;
+  color: var(--accent-color);
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.theme-toggle-container {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+}
+
+body.dark-mode .theme-toggle-container {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.large-toggle {
+  width: 100% !important;
+  height: 50px !important;
+  border-radius: 12px !important;
+  padding: 0 20px !important;
+}
+
+.large-toggle span {
+  position: static !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.sound-control-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sound-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  color: #666;
+}
+
+body.dark-mode .sound-label-row {
+  color: #aaa;
+}
+
+#masterVolume,
+#sfxVolume {
+  width: 100%;
+}
+
 /* Custom Parameters Styling */
 .custom-params-area {
   margin-top: 20px;
@@ -689,56 +761,77 @@ body.dark-mode .c-input label {
   }
 }
 
-/* Theme Toggle Button (Refined) */
-.theme-toggle-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  width: 40px;
-  height: 40px;
+/* Improved Large Toggle for Settings */
+.large-toggle {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0 !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid var(--panel-border) !important;
+  position: relative;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+body.dark-mode .large-toggle {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.large-toggle span {
+  flex: 1;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: background 0.2s, transform 0.3s;
-  position: relative;
-  overflow: hidden;
+  gap: 8px;
+  z-index: 2;
+  transition: color 0.3s;
+  font-size: 0.95rem;
+  padding: 0 15px;
 }
 
-.theme-toggle-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  transform: rotate(15deg);
+.large-toggle .sun {
+  color: var(--warn-color);
+  opacity: 1 !important;
+  transform: none !important;
 }
 
-body.dark-mode .theme-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+.large-toggle .moon {
+  color: #90caf9;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
-.theme-toggle-btn span {
-  font-size: 1.4rem;
+/* Background Highlight for Active Theme */
+.large-toggle::after {
+  content: '';
   position: absolute;
-  transition: opacity 0.3s, transform 0.3s;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 6px);
+  height: calc(100% - 8px);
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
 }
 
-.theme-toggle-btn .sun {
-  opacity: 1;
-  transform: scale(1);
+body.dark-mode .large-toggle::after {
+  transform: translateX(100%);
+  background: #333;
 }
 
-.theme-toggle-btn .moon {
-  opacity: 0;
-  transform: scale(0.5) rotate(-90deg);
+body.dark-mode .large-toggle .sun {
+  color: #888;
 }
 
-body.dark-mode .theme-toggle-btn .sun {
-  opacity: 0;
-  transform: scale(0.5) rotate(90deg);
+body:not(.dark-mode) .large-toggle .moon {
+  color: #888;
 }
 
-body.dark-mode .theme-toggle-btn .moon {
-  opacity: 1;
-  transform: scale(1) rotate(0);
-}
+/* Theme Toggle Button (Original Mini Version in Header was removed) */
 
 /* Dark Mode Variables & Overrides */
 body.dark-mode {
@@ -918,13 +1011,14 @@ body.dark-mode #eventLog li {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(230, 240, 255, 0.8);
-  backdrop-filter: blur(15px);
-  z-index: 2000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: opacity 0.5s ease-out;
+  background: rgba(230, 240, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 9999;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  transition: all 0.4s ease;
 }
 
 body.dark-mode .start-overlay {
@@ -1090,29 +1184,88 @@ body.dark-mode .sim-select {
   color: #fff;
 }
 
+.action-btn-grid,
 .sport-btn-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
 }
 
-.sport-btn {
-  padding: 8px 12px;
-  border: 1px solid var(--panel-border);
+.meal-btn,
+.insulin-btn {
+  padding: 10px 12px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--panel-border);
+  color: var(--text-color);
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: var(--font-family);
-  text-align: left;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+body.dark-mode .meal-btn,
+body.dark-mode .insulin-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+}
+
+.meal-btn:hover,
+.insulin-btn:hover,
+.sport-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.meal-btn:hover {
+  background: rgba(255, 145, 0, 0.2);
+  border-color: var(--warn-color);
+}
+
+.insulin-btn:hover {
+  background: rgba(41, 121, 255, 0.2);
+  border-color: #2979ff;
 }
 
 .sport-btn:hover {
-  background: var(--accent-color);
-  color: white;
-  transform: translateX(5px);
+  background: rgba(124, 179, 66, 0.2);
+  border-color: #7cb342;
+  color: var(--text-color);
 }
+
+.meal-btn {
+  border-left: 4px solid var(--warn-color);
+}
+
+.insulin-btn {
+  border-left: 4px solid #2979ff;
+}
+
+.insulin-btn.correction {
+  font-weight: bold;
+}
+
+.sport-btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--panel-border);
+  border-left: 4px solid #7cb342;
+  color: var(--text-color);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
 
 body.dark-mode .sport-btn {
   background: rgba(255, 255, 255, 0.05);
@@ -1252,4 +1405,25 @@ body.dark-mode .credits-content {
 
 .collapsible-card.collapsed {
   padding-bottom: 10px;
+}
+
+.res-grade.grade-a {
+  color: #00c853;
+}
+
+.res-grade.grade-b {
+  color: #7cb342;
+}
+
+.res-grade.grade-c {
+  color: #ff6d00;
+}
+
+.res-grade.grade-d {
+  color: #ff3d00;
+}
+
+.res-grade.grade-f {
+  color: #d50000;
+  font-weight: bold;
 }

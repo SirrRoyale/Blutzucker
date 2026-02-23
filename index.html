@@ -18,7 +18,45 @@
       <h1>Blutzucker Simulation</h1>
       <div class="menu-btn-group">
         <button id="startGameBtn" class="sim-btn menu-large-btn">🎮 START</button>
+        <button id="openSettingsBtn" class="sim-btn menu-large-btn secondary">⚙️ Einstellungen</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Settings Overlay -->
+  <div id="settingsMenu" class="start-overlay hidden">
+    <div class="glass-panel start-card">
+      <h1>Einstellungen</h1>
+      <div class="settings-content">
+        <div class="settings-group">
+          <label>Erscheinungsbild</label>
+          <div class="theme-toggle-container">
+            <button id="themeToggle" class="theme-toggle-btn large-toggle" aria-label="Toggle Theme">
+              <span class="sun">☀️ Light Mode</span>
+              <span class="moon">🌙 Dark Mode</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <label>Sound & Musik</label>
+          <div class="sound-control-item">
+            <div class="sound-label-row">
+              <span>Hauptlautstärke</span>
+              <span id="masterVolumeValue">70%</span>
+            </div>
+            <input type="range" id="masterVolume" min="0" max="100" value="70">
+          </div>
+          <div class="sound-control-item">
+            <div class="sound-label-row">
+              <span>Effekte</span>
+              <span id="sfxVolumeValue">80%</span>
+            </div>
+            <input type="range" id="sfxVolume" min="0" max="100" value="80">
+          </div>
+        </div>
+      </div>
+      <button id="closeSettingsBtn" class="sim-btn restart-btn">Speichern & Schließen</button>
     </div>
   </div>
 
@@ -104,10 +142,6 @@
             <span class="icon">?</span>
             <span class="text">--</span>
           </div>
-          <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
-            <span class="sun">☀️</span>
-            <span class="moon">🌙</span>
-          </button>
         </div>
 
         <div class="stats-grid">
@@ -162,17 +196,12 @@
           </div>
           <div class="card-content">
             <div class="control-group">
-              <label for="mealType">Mahlzeitentyp</label>
-              <select id="mealType" class="sim-select">
-                <option value="FAST">Süßigkeiten (Schnell)</option>
-                <option value="NORMAL" selected>Mahlzeit (Normal)</option>
-                <option value="SLOW">Vollkorn (Langsam)</option>
-              </select>
-              <label for="carbsInput">Kohlenhydrate (g)</label>
-              <div class="input-wrapper">
-                <input type="number" id="carbsInput" min="0" max="200" value="0">
+              <label>Mahlzeit wählen</label>
+              <div class="action-btn-grid">
+                <button class="meal-btn" data-type="NORMAL" data-carbs="60">🍳 Frühstück (+60 mg/dL)</button>
+                <button class="meal-btn" data-type="NORMAL" data-carbs="80">🥗 Mittagessen (+80 mg/dL)</button>
+                <button class="meal-btn" data-type="FAST" data-carbs="30">🍪 Snack (+30 mg/dL)</button>
               </div>
-              <button id="eatBtn" class="action-btn eat">Essen</button>
             </div>
           </div>
         </div>
@@ -185,16 +214,14 @@
           </div>
           <div class="card-content">
             <div class="control-group">
-              <label for="insulinType">Insulintyp</label>
-              <select id="insulinType" class="sim-select">
-                <option value="BOLUS" selected>Bolus (Schnell)</option>
-                <option value="BASAL">Basal (Verzögert)</option>
-              </select>
-              <label for="insulinInput">Insulin (IE)</label>
-              <div class="input-wrapper">
-                <input type="number" id="insulinInput" min="0" max="50" step="0.5" value="0">
+              <label>Insulin wählen</label>
+              <div class="action-btn-grid">
+                <button class="insulin-btn bolus" data-type="BOLUS" data-effect="70">💉 Bolus Insulin (-70
+                  mg/dL)</button>
+                <button class="insulin-btn basal" data-type="BASAL" data-effect="50">⏳ Basal Insulin (-50
+                  mg/dL)</button>
+                <button class="insulin-btn correction" id="correctionBtn">🎯 Korrektur-Dosis</button>
               </div>
-              <button id="injectBtn" class="action-btn inject">Spritzen</button>
             </div>
           </div>
         </div>

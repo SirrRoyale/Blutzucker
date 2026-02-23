@@ -50,6 +50,46 @@
     Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.1)'; // Light borders
   }
 
+  class SoundManager {
+    constructor() {
+      this.masterVolume = 0.7;
+      this.sfxVolume = 0.8;
+      this.sounds = {};
+
+      // Preparation for future sounds
+      // this.loadSound('click', 'assets/sounds/click.mp3');
+      // this.loadSound('alert', 'assets/sounds/alert.mp3');
+    }
+
+    setMasterVolume(value) {
+      this.masterVolume = value / 100;
+      console.log(`Master Volume set to: ${this.masterVolume}`);
+    }
+
+    setSfxVolume(value) {
+      this.sfxVolume = value / 100;
+      console.log(`SFX Volume set to: ${this.sfxVolume}`);
+    }
+
+    play(name) {
+      if (this.sounds[name]) {
+        const sound = this.sounds[name].cloneNode();
+        sound.volume = this.masterVolume * this.sfxVolume;
+        sound.play().catch(e => console.warn("Sound play failed:", e));
+      } else {
+        console.log(`Sound placeholder: Playing ${name}...`);
+      }
+    }
+
+    // Helper to load sounds
+    loadSound(name, src) {
+      const audio = new Audio(src);
+      this.sounds[name] = audio;
+    }
+  }
+
+  const sounds = new SoundManager();
+
   // --- Helper Classes ---
 
   class InsulinEffect {
@@ -396,7 +436,14 @@
         document.getElementById('resTIR').textContent = stats.tir + "%";
         document.getElementById('resHypos').textContent = stats.hypos;
         document.getElementById('resHypers').textContent = stats.hypers;
-        document.getElementById('resGrade').textContent = stats.grade;
+
+        const gradeEl = document.getElementById('resGrade');
+        gradeEl.textContent = stats.grade;
+        // Remove old classes
+        gradeEl.classList.remove('grade-a', 'grade-b', 'grade-c', 'grade-d', 'grade-f');
+        // Add new class
+        gradeEl.classList.add(`grade-${stats.grade.toLowerCase()}`);
+
         overlay.classList.remove('hidden');
       }
     }
@@ -705,8 +752,9 @@
     }
 
     function startGame(typeName, icon, rate) {
-      // Hide overlays
-      startScreen.classList.add('hidden');
+      // Hide all overlays
+      const overlays = document.querySelectorAll('.start-overlay');
+      overlays.forEach(o => o.classList.add('hidden'));
       dashboard.classList.remove('blur-background');
 
       // Update Header Display
@@ -743,6 +791,44 @@
       if (idx !== 0) c.classList.add('collapsed');
     });
 
+    // --- Settings UI Elements ---
+    const settingsMenu = document.getElementById('settingsMenu');
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const masterVolume = document.getElementById('masterVolume');
+    const sfxVolume = document.getElementById('sfxVolume');
+    const masterVolumeValue = document.getElementById('masterVolumeValue');
+    const sfxVolumeValue = document.getElementById('sfxVolumeValue');
+
+    if (openSettingsBtn) {
+      openSettingsBtn.addEventListener('click', () => {
+        settingsMenu.classList.remove('hidden');
+      });
+    }
+
+    if (closeSettingsBtn) {
+      closeSettingsBtn.addEventListener('click', () => {
+        settingsMenu.classList.add('hidden');
+        sounds.play('click');
+      });
+    }
+
+    if (masterVolume) {
+      masterVolume.addEventListener('input', (e) => {
+        const val = e.target.value;
+        masterVolumeValue.textContent = val + "%";
+        sounds.setMasterVolume(val);
+      });
+    }
+
+    if (sfxVolume) {
+      sfxVolume.addEventListener('input', (e) => {
+        const val = e.target.value;
+        sfxVolumeValue.textContent = val + "%";
+        sounds.setSfxVolume(val);
+      });
+    }
+
     // --- Theme Logic ---
     const themeBtn = document.getElementById('themeToggle');
     const body = document.body;
@@ -753,7 +839,6 @@
       body.classList.add('dark-mode');
       sim.updateChartTheme(true);
     }
-
 
     if (themeBtn) {
       themeBtn.addEventListener('click', () => {
@@ -766,31 +851,51 @@
           localStorage.setItem('theme', 'light');
         }
         sim.updateChartTheme(isDark);
+        sounds.play('click');
       });
     }
 
     // --- Action Button Listeners ---
-    const eatBtn = document.getElementById('eatBtn');
-    if (eatBtn) {
-      eatBtn.addEventListener('click', () => {
-        const carbs = parseFloat(document.getElementById('carbsInput').value);
-        const type = document.getElementById('mealType').value;
+    const mealButtons = document.querySelectorAll('.meal-btn');
+    mealButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetEffect = parseFloat(btn.dataset.carbs); // used as effect target
+        const type = btn.dataset.type;
+        // Calculation: 10g carbs raises BG by (ISF/ICR) mg/dL
+        // Amount (g) = (targetEffect * ICR) / ISF
+        const carbs = (targetEffect * CONFIG.ICR) / CONFIG.ISF;
         sim.addCarbs(carbs, type);
         sim.updateUI();
-        // Reset input
-        document.getElementById('carbsInput').value = 0;
       });
-    }
+    });
 
-    const injectBtn = document.getElementById('injectBtn');
-    if (injectBtn) {
-      injectBtn.addEventListener('click', () => {
-        const units = parseFloat(document.getElementById('insulinInput').value);
-        const type = document.getElementById('insulinType').value;
+    const insulinButtons = document.querySelectorAll('.insulin-btn:not(.correction)');
+    insulinButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetEffect = parseFloat(btn.dataset.effect);
+        const type = btn.dataset.type;
+        // Calculation: 1 Unit drops BG by ISF mg/dL
+        // Amount (Units) = targetEffect / ISF
+        const units = targetEffect / CONFIG.ISF;
         sim.addInsulin(units, type);
         sim.updateUI();
-        // Reset input
-        document.getElementById('insulinInput').value = 0;
+      });
+    });
+
+    const correctionBtn = document.getElementById('correctionBtn');
+    if (correctionBtn) {
+      correctionBtn.addEventListener('click', () => {
+        const currentBG = sim.bg;
+        const targetBG = CONFIG.TARGET_BG;
+        if (currentBG > targetBG) {
+          const diff = currentBG - targetBG;
+          // Constrain diff to 40-80 as requested roughly, but let's just calculate exact
+          // User said "Korrektur-Dosis (-40 bis -80 mg/dL je nach Wert)"
+          const targetDrop = Math.min(Math.max(diff, 40), 80);
+          const units = targetDrop / CONFIG.ISF;
+          sim.addInsulin(units, 'BOLUS');
+          sim.updateUI();
+        }
       });
     }
 
