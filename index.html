@@ -6,13 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blutzucker Simulation</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Using Chart.js 4.x UMD Bundle (No Module) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+  <script>
+    (function () {
+      const theme = localStorage.getItem('sim_theme');
+      if (theme === 'dark') document.documentElement.classList.add('dark-mode');
+      document.addEventListener('DOMContentLoaded', () => {
+        if (theme === 'dark') document.body.classList.add('dark-mode');
+      });
+    })();
+  </script>
 </head>
 
 <body>
-  <!-- Main Menu Overlay -->
+  <!-- Launcher / Main Menu -->
   <div id="mainMenu" class="start-overlay">
     <div class="achievement-top-left">
       <button id="openAchievementsBtn" class="account-trigger">
@@ -26,72 +32,94 @@
         <div class="user-avatar">👤</div>
       </button>
     </div>
-    <div class="glass-panel start-card">
+
+    <!-- 1. Main Menu State -->
+    <div id="mainMenuCard" class="glass-panel start-card">
       <h1>Blutzucker Simulation</h1>
       <div class="menu-btn-group">
         <button id="startGameBtn" class="sim-btn menu-large-btn">🎮 START</button>
         <button id="openSettingsBtn" class="sim-btn menu-large-btn secondary">⚙️ Einstellungen</button>
       </div>
     </div>
+
+    <!-- 2. Mode Selection State -->
+    <div id="modeSelection" class="glass-panel start-card hidden">
+      <div class="card-header">
+        <h1>Modus Wählen</h1>
+        <button id="backToMainFromMode" class="close-btn">↩️</button>
+      </div>
+      <div class="menu-btn-group">
+        <button id="startArcade" class="sim-btn menu-large-btn">🕹️ Arcade</button>
+        <button id="startStory" class="sim-btn menu-large-btn">📖 Story Mode</button>
+      </div>
+    </div>
+
+    <!-- 3. Story Level Selection -->
+    <div id="storySelection" class="glass-panel start-card hidden">
+      <div class="card-header">
+        <h1>Story Levels</h1>
+        <button id="backToModeFromStory" class="close-btn">↩️</button>
+      </div>
+      <div class="story-grid">
+        <button class="story-lvl-btn" data-level="1">
+          <span class="lvl-num">1</span>
+          <span class="lvl-title">Grundlagen</span>
+        </button>
+        <button class="story-lvl-btn" data-level="2">
+          <span class="lvl-num">2</span>
+          <span class="lvl-title">Mahlzeiten</span>
+        </button>
+        <button class="story-lvl-btn" data-level="3">
+          <span class="lvl-num">3</span>
+          <span class="lvl-title">Sport</span>
+        </button>
+        <button class="story-lvl-btn" data-level="4">
+          <span class="lvl-num">4</span>
+          <span class="lvl-title">Disziplin</span>
+        </button>
+        <button class="story-lvl-btn" data-level="5">
+          <span class="lvl-num">5</span>
+          <span class="lvl-title">Der Marathon</span>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <!-- Settings Overlay -->
+  <!-- Shared Overlays (Settings, Achievements, Auth, Profile) -->
+  <!-- [SETTINGS] -->
   <div id="settingsMenu" class="start-overlay hidden">
     <div class="glass-panel start-card">
       <h1>Einstellungen</h1>
       <div class="settings-content">
         <div class="settings-group">
-          <label>Erscheinungsbild</label>
+          <label>Darstellung</label>
           <div class="theme-toggle-container">
-            <button id="themeToggle" class="theme-toggle-btn large-toggle" aria-label="Toggle Theme">
-              <span class="sun">☀️ Light Mode</span>
-              <span class="moon">🌙 Dark Mode</span>
+            <button id="themeToggle" class="large-toggle">
+              <span class="sun">☀️ Hell</span>
+              <span class="moon">🌙 Dunkel</span>
             </button>
           </div>
         </div>
-
-        <div class="settings-group">
-          <label>Sound & Musik</label>
-          <div class="sound-control-item">
-            <div class="sound-label-row">
-              <span>Hauptlautstärke</span>
-              <span id="masterVolumeValue">70%</span>
-            </div>
-            <input type="range" id="masterVolume" min="0" max="100" value="70">
-          </div>
-          <div class="sound-control-item">
-            <div class="sound-label-row">
-              <span>Effekte</span>
-              <span id="sfxVolumeValue">80%</span>
-            </div>
-            <input type="range" id="sfxVolume" min="0" max="100" value="80">
-          </div>
-        </div>
       </div>
-      <button id="closeSettingsBtn" class="sim-btn restart-btn">Speichern & Schließen</button>
+      <button id="closeSettingsBtn" class="sim-btn restart-btn">Schließen</button>
     </div>
   </div>
 
-  <!-- Achievements Overlay -->
+  <!-- [ACHIEVEMENTS] -->
   <div id="achievementsMenu" class="start-overlay hidden">
     <div class="glass-panel start-card profile-card">
       <div class="card-header">
         <h1>🏆 Erfolge</h1>
         <button id="closeAchievementsBtn" class="close-btn">×</button>
       </div>
-      <p class="subtitle">Deine Meilensteine in der Simulation</p>
-
-      <div class="achievements-list" id="achievementsList">
-        <!-- Achievements will be injected here -->
-      </div>
-
+      <div class="achievements-list" id="achievementsList"></div>
       <div class="profile-actions">
         <button id="closeAchievementsBtnBottom" class="sim-btn">Schließen</button>
       </div>
     </div>
   </div>
 
-  <!-- Auth Overlay -->
+  <!-- [AUTH] -->
   <div id="authMenu" class="start-overlay hidden">
     <div class="glass-panel start-card auth-card">
       <h1 id="authTitle">Anmelden</h1>
@@ -99,60 +127,31 @@
         <button id="showLoginTab" class="auth-tab active">Login</button>
         <button id="showRegisterTab" class="auth-tab">Registrieren</button>
       </div>
-
       <form id="authForm" class="auth-form">
-        <div class="settings-group">
-          <label>Email</label>
-          <input type="email" id="authEmail" placeholder="name@beispiel.de" required>
-        </div>
-        <div class="settings-group">
-          <label>Passwort</label>
-          <input type="password" id="authPassword" placeholder="••••••••" required>
-        </div>
+        <input type="email" id="authEmail" placeholder="Email" required>
+        <input type="password" id="authPassword" placeholder="Passwort" required>
         <button type="submit" id="authSubmitBtn" class="sim-btn menu-large-btn">Bestätigen</button>
       </form>
-
-      <div class="auth-divider"><span>ODER</span></div>
-
-      <button id="googleAuthBtn" class="google-btn">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-        Mit Google anmelden
-      </button>
-
       <button id="closeAuthBtn" class="sim-btn restart-btn secondary">Abbrechen</button>
     </div>
   </div>
 
-  <!-- Profile Overlay -->
+  <!-- [PROFILE] -->
   <div id="profileMenu" class="start-overlay hidden">
     <div class="glass-panel start-card profile-card">
       <div class="profile-header">
         <div class="user-avatar large">👤</div>
         <h1 id="profileUsername">Benutzerprofil</h1>
-        <p id="profileEmail" class="subtitle">email@beispiel.de</p>
+        <p id="profileEmail" class="subtitle"></p>
       </div>
-
       <div class="profile-stats-row">
-        <div class="p-stat">
-          <span class="p-label">Simulationen</span>
-          <span id="pSimCount" class="p-value">0</span>
-        </div>
-        <div class="p-stat">
-          <span class="p-label">Beste Bewertung</span>
-          <span id="pBestGrade" class="p-value">--</span>
-        </div>
+        <div class="p-stat"><span class="p-label">Sims</span><span id="pSimCount" class="p-value">0</span></div>
+        <div class="p-stat"><span class="p-label">Best</span><span id="pBestGrade" class="p-value">--</span></div>
       </div>
-
       <div class="profile-history">
-        <div class="history-header">
-          <h3>Simulationen</h3>
-          <button id="clearHistoryBtn" class="clear-btn-small">Alle löschen</button>
-        </div>
-        <div id="historyList" class="history-list">
-          <!-- History items injected here -->
-        </div>
+        <h3>Historie</h3>
+        <div id="historyList" class="history-list"></div>
       </div>
-
       <div class="profile-actions">
         <button id="logoutBtn" class="sim-btn danger">Abmelden</button>
         <button id="closeProfileBtn" class="sim-btn restart-btn">Schließen</button>
@@ -160,240 +159,8 @@
     </div>
   </div>
 
-
-
-  <!-- Start Screen Overlay -->
-  <div id="startScreen" class="start-overlay hidden">
-    <div class="glass-panel start-card">
-      <div class="card-header">
-        <h1>Willkommen zur Blutzucker Simulation</h1>
-        <button id="backToMainMenuBtn" class="close-btn" title="Zurück zum Hauptmenü">↩️</button>
-      </div>
-      <p>Bitte wähle deinen Körpertyp für die Simulation:</p>
-      <div class="body-type-grid">
-        <button class="body-type-btn" data-type="sporty" data-rate="-5">
-          <span class="icon">🏃</span>
-          <span class="label">Sportlich</span>
-          <span class="detail">-5 mg/dL pro Std.</span>
-        </button>
-        <button class="body-type-btn" data-type="healthy" data-rate="-3">
-          <span class="icon">🥗</span>
-          <span class="label">Gesund</span>
-          <span class="detail">-3 mg/dL pro Std.</span>
-        </button>
-        <button class="body-type-btn" data-type="overweight" data-rate="-1.5">
-          <span class="icon">🍔</span>
-          <span class="label">Übergewichtig</span>
-          <span class="detail">-1.5 mg/dL pro Std.</span>
-        </button>
-        <button class="body-type-btn" data-type="t2" data-rate="-1">
-          <span class="icon">💊</span>
-          <span class="label">Diabetes Typ 2</span>
-          <span class="detail">-1 mg/dL pro Std.</span>
-        </button>
-        <button class="body-type-btn" data-type="t1" data-rate="2">
-          <span class="icon">💉</span>
-          <span class="label">Diabetes Typ 1</span>
-          <span class="detail">+2 mg/dL pro Std.</span>
-        </button>
-        <button class="body-type-btn" data-type="custom" id="customTypeBtn">
-          <span class="icon">⚙️</span>
-          <span class="label">Benutzerdefiniert</span>
-          <span class="detail">Eigene Werte</span>
-        </button>
-      </div>
-
-      <!-- Custom Parameters (Hidden Initially) -->
-      <div id="customParams" class="custom-params-area hidden">
-        <div class="custom-input-group">
-          <div class="c-input">
-            <label>Metabolismus (mg/dL/h)</label>
-            <input type="number" id="customRate" value="-3" step="0.5">
-          </div>
-          <div class="c-input">
-            <label>ISF (Empfindlichkeit)</label>
-            <input type="number" id="customISF" value="40" step="1">
-          </div>
-          <div class="c-input">
-            <label>ICR (KH-Verhältnis)</label>
-            <input type="number" id="customICR" value="10" step="0.5">
-          </div>
-        </div>
-        <button id="startCustomBtn" class="sim-btn start-custom-btn">🚀 Simulation Starten</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="dashboard-container blur-background">
-    <!-- Notification Zone for Events -->
-    <div id="eventNotification" class="event-notification hidden">
-      <span class="event-icon">💡</span>
-      <span id="eventMessage" class="event-msg">Random Event!</span>
-    </div>
-
-    <!-- Header Section: Stats & Time & Controls & Log -->
-    <header class="glass-panel header-panel">
-      <div class="header-left">
-        <div class="title-section">
-          <h1 id="headerTitle">Blutzucker Simulator</h1>
-          <p class="subtitle">Interaktives 24h Modell</p>
-          <div id="healthStatus" class="health-status">OK</div>
-        </div>
-
-        <div class="header-controls">
-          <div id="bodyTypeDisplay" class="body-type-badge">
-            <span class="icon">?</span>
-            <span class="text">--</span>
-          </div>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-card">
-            <span class="stat-label">Zeit</span>
-            <span class="stat-value" id="timeDisplay">08:00</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Blutzucker</span>
-            <span class="stat-value" id="bgDisplay">--</span>
-            <span class="stat-unit">mg/dL</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">IOB</span>
-            <span class="stat-value" id="iobDisplay">0.0</span>
-            <span class="stat-unit">IE</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">COB</span>
-            <span class="stat-value" id="cobDisplay">0</span>
-            <span class="stat-unit">g</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="header-right">
-        <!-- Card: Steuerung -->
-        <div class="header-card controls-card-compact">
-          <div class="controls-row">
-            <button id="nextHourBtn" class="sim-btn icon-btn" title="Nächste Stunde (+1h)">🕒 +1h</button>
-            <button id="autoRunBtn" class="sim-btn icon-btn secondary" title="Auto-Run">▶ Run</button>
-            <div class="speed-control">
-              <span class="speed-icon">⚡</span>
-              <input type="range" id="speedSlider" min="10" max="500" value="100" title="Geschwindigkeit">
-            </div>
-            <button id="resetBtn" class="sim-btn icon-btn danger" title="Simulation Zurücksetzen">🔄</button>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Dashboard Grid (2 Columns on Desktop) -->
-    <div class="dashboard-main-grid">
-
-      <!-- Left Column: Actions -->
-      <div class="side-panel left-panel">
-        <!-- Card 1: Essen -->
-        <div class="control-card collapsible-card">
-          <div class="card-header">
-            <h3>🍎 Essen</h3>
-            <button class="collapse-toggle" aria-label="Toggle Card">▼</button>
-          </div>
-          <div class="card-content">
-            <div class="control-group">
-              <label>Mahlzeit wählen</label>
-              <div class="action-btn-grid">
-                <button class="meal-btn" data-type="NORMAL" data-carbs="60">🍳 Frühstück (+60 mg/dL)</button>
-                <button class="meal-btn" data-type="NORMAL" data-carbs="80">🥗 Mittagessen (+80 mg/dL)</button>
-                <button class="meal-btn" data-type="FAST" data-carbs="30">🍪 Snack (+30 mg/dL)</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 2: Insulin -->
-        <div class="control-card collapsible-card">
-          <div class="card-header">
-            <h3>💉 Insulin</h3>
-            <button class="collapse-toggle" aria-label="Toggle Card">▼</button>
-          </div>
-          <div class="card-content">
-            <div class="control-group">
-              <label>Insulin wählen</label>
-              <div class="action-btn-grid">
-                <button class="insulin-btn bolus" data-type="BOLUS" data-effect="70">💉 Bolus Insulin (-70
-                  mg/dL)</button>
-                <button class="insulin-btn basal" data-type="BASAL" data-effect="50">⏳ Basal Insulin (-50
-                  mg/dL)</button>
-                <button class="insulin-btn correction" id="correctionBtn">🎯 Korrektur-Dosis</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 3: Sport -->
-        <div class="control-card collapsible-card">
-          <div class="card-header">
-            <h3>🏃 Bewegung</h3>
-            <button class="collapse-toggle" aria-label="Toggle Card">▼</button>
-          </div>
-          <div class="card-content">
-            <div class="control-group">
-              <label>Aktivität wählen</label>
-              <div class="sport-btn-grid">
-                <button class="sport-btn" data-type="LIGHT">🚶 Spaziergang</button>
-                <button class="sport-btn" data-type="MEDIUM">🏃 Joggen</button>
-                <button class="sport-btn" data-type="HEAVY">🏋️ Intensiv</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Column: Chart -->
-      <section class="glass-panel chart-panel center-panel">
-        <canvas id="bgChart"></canvas>
-        <div id="deathOverlay" class="death-overlay hidden">
-          <div class="death-card">
-            <h2 id="deathMessage">DU BIST TOT</h2>
-            <p>Dein Blutzucker ist entgleist.</p>
-            <div class="death-controls">
-              <button id="respawnBtn" class="sim-btn restart-btn">🔄 Neustart</button>
-              <button id="reviveBtn" class="sim-btn revive-btn">🧪 Notfall-Spritze (Revive)</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 24h Results Overlay -->
-        <div id="resultsOverlay" class="death-overlay hidden">
-          <div class="glass-panel start-card results-card">
-            <h2>📅 24h Auswertung</h2>
-            <div class="results-grid">
-              <div class="res-item">
-                <span class="res-label">Zeit im Zielbereich:</span>
-                <span id="resTIR" class="res-value">--</span>
-              </div>
-              <div class="res-item">
-                <span class="res-label">Hypo-Ereignisse:</span>
-                <span id="resHypos" class="res-value">--</span>
-              </div>
-              <div class="res-item">
-                <span class="res-label">Hyper-Ereignisse:</span>
-                <span id="resHypers" class="res-value">--</span>
-              </div>
-              <div class="res-score">
-                <span class="res-label">Bewertung:</span>
-                <span id="resGrade" class="res-grade">--</span>
-              </div>
-            </div>
-            <button class="sim-btn restart-btn">🔄 Nächster Tag / Reset</button>
-          </div>
-        </div>
-      </section>
-
-    </div>
-  </div>
-
-  <!-- Removed type="module" to allow file:// access and UMD compatibility -->
-  <script src="script.js" defer></script>
+  <script src="core.js"></script>
+  <script src="launcher.js"></script>
 </body>
 
 </html>

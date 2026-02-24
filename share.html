@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erfolg geteilt! - Blutzucker Simulation</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .share-container {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        body.dark-mode .share-container {
+            background: linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 100%);
+        }
+
+        .share-card {
+            text-align: center;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .share-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .share-title {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+
+        .share-text {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+    </style>
+    <script>
+        (function () {
+            const theme = localStorage.getItem('sim_theme');
+            if (theme === 'dark') document.documentElement.classList.add('dark-mode');
+            document.addEventListener('DOMContentLoaded', () => {
+                if (theme === 'dark') document.body.classList.add('dark-mode');
+
+                const params = new URLSearchParams(window.location.search);
+                const user = params.get('u') || 'Ein Spieler';
+                const lvl = params.get('l') || '?';
+                const title = params.get('t') || 'ein Level';
+
+                document.getElementById('userName').textContent = user;
+                document.getElementById('lvlName').textContent = `Level ${lvl}: ${title}`;
+            });
+        })();
+    </script>
+</head>
+
+<body>
+    <div class="share-container">
+        <div class="glass-panel share-card">
+            <span class="share-icon">🏆</span>
+            <h1 class="share-title">Erfolg geteilt!</h1>
+            <p class="share-text">
+                <strong id="userName">...</strong> hat gerade <br>
+                <span id="lvlName" style="color:var(--accent-color); font-weight:bold;">...</span> <br>
+                im Blutzucker Simulator gemeistert! 💉🔥
+            </p>
+            <button onclick="window.location.href='index.html'" class="sim-btn">Jetzt selbst spielen</button>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blutzucker Simulation - Story Mode</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('sim_theme');
+            if (theme === 'dark') document.documentElement.classList.add('dark-mode');
+            document.addEventListener('DOMContentLoaded', () => {
+                if (theme === 'dark') document.body.classList.add('dark-mode');
+            });
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <div id="eventNotification" class="event-notification hidden">
+            <span class="event-icon">💡</span>
+            <span id="eventMessage" class="event-msg"></span>
+        </div>
+
+        <!-- Story Header with Objective -->
+        <header class="glass-panel header-panel story-header">
+            <div class="header-left">
+                <div class="title-section">
+                    <h1 id="headerTitle" style="cursor:pointer">Story Mode</h1>
+                    <p class="subtitle" id="levelTitle">Level X: ...</p>
+                    <div id="healthStatus" class="health-status">OK</div>
+                </div>
+                <div class="objective-card glass-panel">
+                    <span class="obj-label">🎯 Ziel:</span>
+                    <span id="objectiveText" class="obj-text">Wird geladen...</span>
+                    <div id="objectiveProgress" class="obj-progress">Fortschritt: --</div>
+                    <div class="action-limits-row"
+                        style="display:flex; gap:10px; margin-top:5px; font-size:0.8rem; border-top:1px solid rgba(0,0,0,0.1); padding-top:5px;">
+                        <span id="limitMeals">🍎 ?</span>
+                        <span id="limitInsulin">💉 ?</span>
+                        <span id="limitSport">🏃 ?</span>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">Zeit</span>
+                        <span class="stat-value" id="timeDisplay">08:00</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Blutzucker</span>
+                        <span class="stat-value" id="bgDisplay">--</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">IOB</span>
+                        <span class="stat-value" id="iobDisplay">0.0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">COB</span>
+                        <span class="stat-value" id="cobDisplay">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-card controls-card-compact">
+                    <div class="controls-row">
+                        <button id="nextHourBtn" class="sim-btn icon-btn">🕒 +1h</button>
+                        <button id="autoRunBtn" class="sim-btn icon-btn secondary">▶ Run</button>
+                        <button id="resetBtn" class="sim-btn icon-btn danger">🔄</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-main-grid">
+            <div class="side-panel left-panel">
+                <div class="control-card collapsible-card">
+                    <div class="card-header">
+                        <h3>🍎 Essen</h3><button class="collapse-toggle">▼</button>
+                    </div>
+                    <div class="card-content">
+                        <div class="action-btn-grid">
+                            <button class="meal-btn" data-type="NORMAL" data-carbs="60">🍳 Frühstück</button>
+                            <button class="meal-btn" data-type="NORMAL" data-carbs="80">🥗 Mittagessen</button>
+                            <button class="meal-btn" data-type="FAST" data-carbs="30">🍪 Snack</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-card collapsible-card">
+                    <div class="card-header">
+                        <h3>💉 Insulin</h3><button class="collapse-toggle">▼</button>
+                    </div>
+                    <div class="card-content">
+                        <div class="action-btn-grid">
+                            <button class="insulin-btn bolus" data-type="BOLUS" data-effect="70">💉 Bolus</button>
+                            <button class="insulin-btn basal" data-type="BASAL" data-effect="50">⏳ Basal</button>
+                            <button class="insulin-btn correction" id="correctionBtn">🎯 Korrektur</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-card collapsible-card">
+                    <div class="card-header">
+                        <h3>🏃 Bewegung</h3><button class="collapse-toggle">▼</button>
+                    </div>
+                    <div class="card-content">
+                        <div class="sport-btn-grid">
+                            <button class="sport-btn" data-type="LIGHT">🚶 Spaziergang</button>
+                            <button class="sport-btn" data-type="MEDIUM">🏃 Joggen</button>
+                            <button class="sport-btn" data-type="HEAVY">🏋️ Intensiv</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="glass-panel chart-panel center-panel">
+                <canvas id="bgChart"></canvas>
+
+                <div id="deathOverlay" class="death-overlay hidden">
+                    <div class="death-card">
+                        <h2>LEVEL FEHLGESCHLAGEN</h2>
+                        <p id="failReason"></p>
+                        <div class="death-controls">
+                            <button id="retryBtn" class="sim-btn restart-btn">🔄 Erneut versuchen</button>
+                            <button onclick="window.location.href='index.html'" class="sim-btn secondary">🏠
+                                Hauptmenü</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="winOverlay" class="death-overlay hidden">
+                    <div class="glass-panel start-card win-card">
+                        <h2 style="color:var(--accent-color)">🎊 LEVEL GESCHAFFT!</h2>
+                        <p id="winMessage"></p>
+                        <div class="death-controls">
+                            <button id="nextLevelBtn" class="sim-btn">➡️ Nächstes Level</button>
+                            <button id="shareLevelBtn" class="sim-btn secondary">🔗 Teilen</button>
+                            <button onclick="window.location.href='index.html'" class="sim-btn secondary">🏠
+                                Hauptmenü</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="core.js"></script>
+    <script src="story.js"></script>
+</body>
+
+</html>

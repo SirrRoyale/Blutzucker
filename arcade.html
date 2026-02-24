@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blutzucker Simulation - Arcade</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('sim_theme');
+            if (theme === 'dark') document.documentElement.classList.add('dark-mode');
+            document.addEventListener('DOMContentLoaded', () => {
+                if (theme === 'dark') document.body.classList.add('dark-mode');
+            });
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+</head>
+
+<body>
+    <!-- Arcade Start Screen Overlay -->
+    <div id="startScreen" class="start-overlay">
+        <div class="glass-panel start-card">
+            <div class="card-header">
+                <h1>Arcade Modus</h1>
+                <button id="backToMainMenuBtn" class="close-btn" title="Zurück zum Hauptmenü">↩️</button>
+            </div>
+            <p>Wähle deinen Körpertyp für diese Runde:</p>
+            <div class="body-type-grid">
+                <button class="body-type-btn" data-type="sporty" data-rate="-5">
+                    <span class="icon">🏃</span>
+                    <span class="label">Sportlich</span>
+                </button>
+                <button class="body-type-btn" data-type="healthy" data-rate="-3">
+                    <span class="icon">🥗</span>
+                    <span class="label">Gesund</span>
+                </button>
+                <button class="body-type-btn" data-type="overweight" data-rate="-1.5">
+                    <span class="icon">🍔</span>
+                    <span class="label">Übergewichtig</span>
+                </button>
+                <button class="body-type-btn" data-type="t2" data-rate="-1">
+                    <span class="icon">💊</span>
+                    <span class="label">Diabetes Typ 2</span>
+                </button>
+                <button class="body-type-btn" data-type="t1" data-rate="2">
+                    <span class="icon">💉</span>
+                    <span class="label">Diabetes Typ 1</span>
+                </button>
+                <button class="body-type-btn" data-type="custom" id="customTypeBtn">
+                    <span class="icon">⚙️</span>
+                    <span class="label">Benutzerdefiniert</span>
+                </button>
+            </div>
+            <div id="customParams" class="custom-params-area hidden">
+                <div class="custom-input-group">
+                    <div class="c-input">
+                        <label>Metabolismus (mg/dL/h)</label>
+                        <input type="number" id="customRate" value="-3" step="0.5">
+                    </div>
+                    <div class="c-input">
+                        <label>ISF (Empfindlichkeit)</label>
+                        <input type="number" id="customISF" value="40" step="1">
+                    </div>
+                    <div class="c-input">
+                        <label>ICR (KH-Verhältnis)</label>
+                        <input type="number" id="customICR" value="10" step="0.5">
+                    </div>
+                </div>
+                <button id="startCustomBtn" class="sim-btn start-custom-btn">🚀 Start</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container blur-background">
+        <div id="eventNotification" class="event-notification hidden">
+            <span class="event-icon">💡</span>
+            <span id="eventMessage" class="event-msg">Random Event!</span>
+        </div>
+
+        <header class="glass-panel header-panel">
+            <div class="header-left">
+                <div class="title-section">
+                    <h1 id="headerTitle" style="cursor:pointer">Blutzucker Simulator</h1>
+                    <p class="subtitle">Arcade Modus</p>
+                    <div id="healthStatus" class="health-status">OK</div>
+                </div>
+                <div class="header-controls">
+                    <div id="bodyTypeDisplay" class="body-type-badge">
+                        <span class="icon">?</span>
+                        <span class="text">--</span>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">Zeit</span>
+                        <span class="stat-value" id="timeDisplay">08:00</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Blutzucker</span>
+                        <span class="stat-value" id="bgDisplay">--</span>
+                        <span class="stat-unit">mg/dL</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">IOB</span>
+                        <span class="stat-value" id="iobDisplay">0.0</span>
+                        <span class="stat-unit">IE</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">COB</span>
+                        <span class="stat-value" id="cobDisplay">0</span>
+                        <span class="stat-unit">g</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-card controls-card-compact">
+                    <div class="controls-row">
+                        <button id="nextHourBtn" class="sim-btn icon-btn">🕒 +1h</button>
+                        <button id="autoRunBtn" class="sim-btn icon-btn secondary">▶ Run</button>
+                        <div class="speed-control">
+                            <span class="speed-icon">⚡</span>
+                            <input type="range" id="speedSlider" min="10" max="500" value="100">
+                        </div>
+                        <button id="resetBtn" class="sim-btn icon-btn danger">🔄</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-main-grid">
+            <div class="side-panel left-panel">
+                <div class="control-card collapsible-card">
+                    <div class="card-header">
+                        <h3>🍎 Essen</h3>
+                        <button class="collapse-toggle">▼</button>
+                    </div>
+                    <div class="card-content">
+                        <div class="action-btn-grid">
+                            <button class="meal-btn" data-type="NORMAL" data-carbs="60">🍳 Frühstück</button>
+                            <button class="meal-btn" data-type="NORMAL" data-carbs="80">🥗 Mittagessen</button>
+                            <button class="meal-btn" data-type="FAST" data-carbs="30">🍪 Snack</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-card collapsible-card">
+                    <div class="card-header">
+                        <h3>💉 Insulin</h3>
+                        <button class="collapse-toggle">▼</button>
+                    </div>
+                    <div class="card-content">
+                        <div class="action-btn-grid">
+                            <button class="insulin-btn bolus" data-type="BOLUS" data-effect="70">💉 Bolus</button>
+                            <button class="insulin-btn basal" data-type="BASAL" data-effect="50">⏳ Basal</button>
+                            <button class="insulin-btn correction" id="correctionBtn">🎯 Korrektur</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-card collapsible-card">
+                    <div class="card-header">
+                        <h3>🏃 Bewegung</h3>
+                        <button class="collapse-toggle">▼</button>
+                    </div>
+                    <div class="card-content">
+                        <div class="sport-btn-grid">
+                            <button class="sport-btn" data-type="LIGHT">🚶 Spaziergang</button>
+                            <button class="sport-btn" data-type="MEDIUM">🏃 Joggen</button>
+                            <button class="sport-btn" data-type="HEAVY">🏋️ Intensiv</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="glass-panel chart-panel center-panel">
+                <canvas id="bgChart"></canvas>
+                <div id="deathOverlay" class="death-overlay hidden">
+                    <div class="death-card">
+                        <h2>DU BIST TOT</h2>
+                        <p>Dein Blutzucker ist entgleist.</p>
+                        <div class="death-controls">
+                            <button id="respawnBtn" class="sim-btn restart-btn">🔄 Neustart</button>
+                            <button id="reviveBtn" class="sim-btn revive-btn">🧪 Notfall-Spritze</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="resultsOverlay" class="death-overlay hidden">
+                    <div class="glass-panel start-card results-card">
+                        <h2>📅 24h Auswertung</h2>
+                        <div class="results-grid">
+                            <div class="res-item"><span>TiR:</span><span id="resTIR">--</span></div>
+                            <div class="res-item"><span>Hypos:</span><span id="resHypos">--</span></div>
+                            <div class="res-item"><span>Hypers:</span><span id="resHypers">--</span></div>
+                            <div class="res-score"><span>Bewertung:</span><span id="resGrade"
+                                    class="res-grade">--</span></div>
+                        </div>
+                        <button class="sim-btn restart-btn">🔄 Nächster Tag</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="core.js"></script>
+    <script src="arcade.js"></script>
+</body>
+
+</html>
