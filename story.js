@@ -74,6 +74,18 @@ class StorySimulation {
         this.updateUI();
     }
 
+    updateSyncIndicator(success) {
+        const el = document.getElementById('syncStatus');
+        const dot = el?.querySelector('.sync-dot');
+        const text = document.getElementById('syncText');
+        if (!el || !dot || !text) return;
+
+        dot.className = success ? 'sync-dot' : 'sync-dot offline';
+        text.textContent = success ? 'Synchronisiert' : 'Sync Fehler';
+        el.classList.add('visible');
+        setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
     updateHeaderAvatar() {
         const el = document.getElementById('headerAvatar');
         if (el && this.auth && this.auth.currentUser && this.auth.currentUser.avatar) {
@@ -160,15 +172,16 @@ class StorySimulation {
         document.getElementById('deathOverlay').classList.remove('hidden');
     }
 
-    win() {
+    async win() {
         this.isFinished = true;
         clearInterval(this.autoRunInterval);
         if (this.auth) {
-            this.auth.unlockAchievement(this.level.achId);
+            await this.auth.unlockAchievement(this.level.achId);
         }
         document.getElementById('winMessage').textContent = `Gut gemacht! Du hast ${this.level.title} abgeschlossen.`;
         document.getElementById('winOverlay').classList.remove('hidden');
     }
+
 
     addInsulin(units, type = 'BOLUS') {
         if (this.isFinished) return;

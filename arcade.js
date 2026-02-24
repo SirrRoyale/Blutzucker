@@ -23,6 +23,18 @@ class Simulation {
         this.updateUI();
     }
 
+    updateSyncIndicator(success) {
+        const el = document.getElementById('syncStatus');
+        const dot = el?.querySelector('.sync-dot');
+        const text = document.getElementById('syncText');
+        if (!el || !dot || !text) return;
+
+        dot.className = success ? 'sync-dot' : 'sync-dot offline';
+        text.textContent = success ? 'Synchronisiert' : 'Sync Fehler';
+        el.classList.add('visible');
+        setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
     updateHeaderAvatar() {
         const el = document.getElementById('headerAvatar');
         if (el && this.auth && this.auth.currentUser && this.auth.currentUser.avatar) {
@@ -163,17 +175,17 @@ class Simulation {
         if (this.auth && this.activityCount >= 5) this.auth.unlockAchievement('sporty');
     }
 
-    showDaySummary() {
+    async showDaySummary() {
         const stats = this.tracker.getScore();
         this.stopAutoRun();
         this.dayEnded = true;
         this.daysSurvived++;
         try {
             if (this.auth) {
-                this.auth.saveResult(stats);
-                this.auth.unlockAchievement('survive_day');
-                if (stats.tir === 100) this.auth.unlockAchievement('perfect_tir');
-                if (stats.grade === 'A') this.auth.unlockAchievement('grade_a');
+                await this.auth.saveResult(stats);
+                await this.auth.unlockAchievement('survive_day');
+                if (stats.tir === 100) await this.auth.unlockAchievement('perfect_tir');
+                if (stats.grade === 'A') await this.auth.unlockAchievement('grade_a');
             }
         } catch (e) {
             console.error("Auth save failed:", e);

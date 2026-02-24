@@ -2337,3 +2337,37 @@ body.dark-mode .settings-group input {
   transform: scale(1.1);
   border-color: var(--accent-color) !important;
 }
+
+/* Sync Status */
+.sync-status {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 10001;
+}
+
+.sync-status.visible {
+  opacity: 1;
+}
+
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-color);
+}
+
+.sync-dot.offline {
+  background: #ff3b30;
+}

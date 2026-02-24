@@ -147,7 +147,8 @@ class DayTracker {
 class AuthManager {
     constructor(simulation) {
         this.sim = simulation;
-        this.users = JSON.parse(localStorage.getItem('sim_users') || '{}');
+        this.apiUrl = 'http://localhost:3000/api/accounts';
+        this.users = {};
         this.currentUser = JSON.parse(localStorage.getItem('sim_current_user') || 'null');
         this.achievements = [
             { id: 'persistent', icon: '🤝', title: 'Dranbleiber', desc: 'Erstelle ein Konto und melde dich an.', category: 'Arcade' },
@@ -156,22 +157,97 @@ class AuthManager {
             { id: 'grade_a', icon: '📜', title: 'Musterschüler', desc: 'Erreiche die Bestnote A bei der Tagesauswertung.', category: 'Arcade' },
             { id: 'sporty', icon: '🏃', title: 'Sportskanone', desc: 'Schließe insgesamt 5 sportliche Aktivitäten ab.', category: 'Arcade' },
             { id: 'platinum', icon: '💎', title: 'Platin-Trophäe', desc: 'Sammle alle anderen Erfolge.', category: 'Spezial' },
-            // Story achievements placeholders
             { id: 'story_lvl1', icon: '📖', title: 'Grundlagen', desc: 'Schließe Story Level 1 ab.', category: 'Story' },
             { id: 'story_lvl2', icon: '📖', title: 'Mahlzeiten-Meister', desc: 'Schließe Story Level 2 ab.', category: 'Story' },
             { id: 'story_lvl3', icon: '📖', title: 'Sportler', desc: 'Schließe Story Level 3 ab.', category: 'Story' },
             { id: 'story_lvl4', icon: '📖', title: 'Diszipliniert', desc: 'Schließe Story Level 4 ab.', category: 'Story' },
             { id: 'story_lvl5', icon: '📖', title: 'Die Legende', desc: 'Schließe Story Level 5 ab.', category: 'Story' }
         ];
+        this.init();
     }
-    // Simplified AuthManager without direct DOM for now, will be initialized per page
-    saveUsers() { localStorage.setItem('sim_users', JSON.stringify(this.users)); }
-    saveCurrentUserChange() {
+
+    async init() {
+        try {
+            const resp = await fetch(this.apiUrl);
+            if (resp.ok) {
+                const data = await resp.json();
+                this.users = data.accounts || {};
+                console.log("Benutzerdaten erfolgreich vom Server geladen.");
+                // Sync to localStorage as backup
+                localStorage.setItem('sim_users', JSON.stringify(this.users));
+            }
+        } catch (e) {
+            console.warn("Backend nicht erreichbar, nutze lokalen Speicher.");
+            this.users = JSON.parse(localStorage.getItem('sim_users') || '{}');
+        }
+    }
+
+    async hashPassword(password) {
+        if (!password) return '';
+        const msgUint8 = new TextEncoder().encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async saveUsers() {
+        localStorage.setItem('sim_users', JSON.stringify(this.users));
+        try {
+            await fetch(this.apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accounts: this.users })
+            });
+            if (this.sim && this.sim.updateSyncIndicator) this.sim.updateSyncIndicator(true);
+        } catch (e) {
+            console.error("Fehler beim Cloud-Sync:", e);
+            if (this.sim && this.sim.updateSyncIndicator) this.sim.updateSyncIndicator(false);
+        }
+    }
+
+    async saveCurrentUserChange() {
+        if (!this.currentUser) return;
         this.users[this.currentUser.email] = this.currentUser;
-        this.saveUsers();
+        await this.saveUsers();
         localStorage.setItem('sim_current_user', JSON.stringify(this.currentUser));
     }
-    saveResult(stats) {
+
+    async register(email, password) {
+        if (this.users[email]) throw new Error("Benutzer existiert bereits.");
+        const hashedPassword = await this.hashPassword(password);
+        this.users[email] = {
+            email,
+            pass: hashedPassword,
+            username: '',
+            history: [],
+            achievements: ['persistent'],
+            isHashed: true
+        };
+        await this.saveUsers();
+        return this.users[email];
+    }
+
+    async login(email, password) {
+        const user = this.users[email];
+        if (!user) return null;
+
+        if (!user.isHashed) {
+            if (user.pass === password) {
+                user.pass = await this.hashPassword(password);
+                user.isHashed = true;
+                await this.saveUsers();
+            } else return null;
+        } else {
+            const hashed = await this.hashPassword(password);
+            if (user.pass !== hashed) return null;
+        }
+
+        this.currentUser = user;
+        localStorage.setItem('sim_current_user', JSON.stringify(this.currentUser));
+        return user;
+    }
+
+    async saveResult(stats) {
         if (!this.currentUser) return;
         const result = {
             date: new Date().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
@@ -182,34 +258,40 @@ class AuthManager {
         };
         if (!this.currentUser.history) this.currentUser.history = [];
         this.currentUser.history.push(result);
-        this.saveCurrentUserChange();
+        await this.saveCurrentUserChange();
     }
-    deleteResult(index) {
+
+    async deleteResult(index) {
         if (!this.currentUser || !this.currentUser.history) return;
         this.currentUser.history.splice(index, 1);
-        this.saveCurrentUserChange();
+        await this.saveCurrentUserChange();
     }
-    updateUsername(newName) {
+
+    async updateUsername(newName) {
         if (!this.currentUser) return;
         this.currentUser.username = newName;
-        this.saveCurrentUserChange();
+        await this.saveCurrentUserChange();
     }
-    updatePassword(newPass) {
+
+    async updatePassword(newPass) {
         if (!this.currentUser) return;
-        this.currentUser.pass = newPass;
-        this.saveCurrentUserChange();
+        this.currentUser.pass = await this.hashPassword(newPass);
+        this.currentUser.isHashed = true;
+        await this.saveCurrentUserChange();
     }
-    removeAvatar() {
+
+    async removeAvatar() {
         if (!this.currentUser) return;
         delete this.currentUser.avatar;
-        this.saveCurrentUserChange();
+        await this.saveCurrentUserChange();
     }
-    unlockAchievement(id) {
+
+    async unlockAchievement(id) {
         if (!this.currentUser) return;
         if (!this.currentUser.achievements) this.currentUser.achievements = [];
         if (!this.currentUser.achievements.includes(id)) {
             this.currentUser.achievements.push(id);
-            this.saveCurrentUserChange();
+            await this.saveCurrentUserChange();
             const ach = this.achievements.find(a => a.id === id);
             if (ach && this.sim && this.sim.showNotification) {
                 this.sim.showNotification(`ERFOLG FREIGESCHALTET: ${ach.icon} ${ach.title}`);
@@ -217,6 +299,7 @@ class AuthManager {
             this.checkPlatinum();
         }
     }
+
     checkPlatinum() {
         if (!this.currentUser || this.currentUser.achievements.includes('platinum')) return;
         const normalAchIds = this.achievements.filter(a => a.id !== 'platinum').map(a => a.id);
