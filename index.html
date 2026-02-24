@@ -29,7 +29,7 @@
     <div class="account-top-right">
       <button id="openAccountBtn" class="account-trigger">
         <span class="user-name-preview">Nicht angemeldet</span>
-        <div class="user-avatar">👤</div>
+        <div class="user-avatar small-avatar" id="topNavAvatar">👤</div>
       </button>
     </div>
 
@@ -140,8 +140,18 @@
   <div id="profileMenu" class="start-overlay hidden">
     <div class="glass-panel start-card profile-card">
       <div class="profile-header">
-        <div class="user-avatar large">👤</div>
-        <h1 id="profileUsername">Benutzerprofil</h1>
+        <button id="openAccSettingsBtn" class="gear-btn" title="Kontoeinstellungen">⚙️</button>
+        <div class="avatar-container">
+          <label for="avatarInput" class="avatar-label" title="Profilbild ändern">
+            <div class="user-avatar large" id="profileAvatar">👤</div>
+            <div class="avatar-overlay">📷</div>
+          </label>
+          <button id="removeAvatarBtn" class="avatar-remove-btn" title="Bild entfernen">×</button>
+        </div>
+        <input type="file" id="avatarInput" accept="image/*" class="hidden">
+        <div class="user-name-row">
+          <h1 id="profileUsername">Benutzerprofil</h1>
+        </div>
         <p id="profileEmail" class="subtitle"></p>
       </div>
       <div class="profile-stats-row">
@@ -155,6 +165,27 @@
       <div class="profile-actions">
         <button id="logoutBtn" class="sim-btn danger">Abmelden</button>
         <button id="closeProfileBtn" class="sim-btn restart-btn">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- [ACCOUNT SETTINGS] -->
+  <div id="accSettingsMenu" class="start-overlay hidden">
+    <div class="glass-panel start-card auth-card">
+      <h1>Kontoeinstellungen</h1>
+      <div class="auth-form">
+        <div class="settings-group">
+          <label>Benutzername</label>
+          <input type="text" id="setNewUsername" placeholder="Neuer Name">
+        </div>
+        <div class="settings-group">
+          <label>Passwort ändern</label>
+          <input type="password" id="setNewPassword" placeholder="Neues Passwort (optional)">
+        </div>
+        <div class="menu-btn-group" style="margin-top: 20px;">
+          <button id="saveAccSettingsBtn" class="sim-btn">Speichern</button>
+          <button id="closeAccSettingsBtn" class="sim-btn secondary">Abbrechen</button>
+        </div>
       </div>
     </div>
   </div>

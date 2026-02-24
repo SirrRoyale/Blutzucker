@@ -70,7 +70,15 @@ class StorySimulation {
         this.level = LEVELS[this.levelNum];
         this.reset();
         this.initChart();
+        this.updateHeaderAvatar();
         this.updateUI();
+    }
+
+    updateHeaderAvatar() {
+        const el = document.getElementById('headerAvatar');
+        if (el && this.auth && this.auth.currentUser && this.auth.currentUser.avatar) {
+            el.innerHTML = `<img src="${this.auth.currentUser.avatar}" alt="Avatar">`;
+        }
     }
 
     reset() {
@@ -271,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const sim = new StorySimulation(urlParams.get('level') || 1);
     sim.auth = new AuthManager(sim);
+    sim.updateHeaderAvatar(); // Re-trigger now that auth is ready
 
     document.getElementById('nextHourBtn').addEventListener('click', () => sim.run(1));
     document.getElementById('autoRunBtn').addEventListener('click', () => {
@@ -296,9 +305,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('shareLevelBtn')?.addEventListener('click', () => {
-        const user = sim.auth?.currentUser ? sim.auth.currentUser.email.split('@')[0] : 'Ein Spieler';
+        const user = sim.auth?.currentUser ? (sim.auth.currentUser.username || sim.auth.currentUser.email.split('@')[0]) : 'Ein Spieler';
+        const avatar = sim.auth?.currentUser?.avatar || '';
         const url = new URL(window.location.href);
-        const shareUrl = `${url.origin}${url.pathname.replace('storymode.html', 'share.html')}?u=${encodeURIComponent(user)}&l=${sim.levelNum}&t=${encodeURIComponent(sim.level.title)}`;
+
+        // Remove "Level X: " from title if it exists to prevent duplication
+        const cleanTitle = sim.level.title.replace(/^Level \d+: /, '');
+
+        const shareUrl = `${url.origin}${url.pathname.replace('storymode.html', 'share.html')}?u=${encodeURIComponent(user)}&l=${sim.levelNum}&t=${encodeURIComponent(cleanTitle)}&a=${encodeURIComponent(avatar)}`;
 
         navigator.clipboard.writeText(shareUrl).then(() => {
             alert("Link in Zwischenablage kopiert! 🔗\nTeile ihn mit deinen Freunden.");

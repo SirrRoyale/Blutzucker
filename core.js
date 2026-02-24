@@ -189,6 +189,21 @@ class AuthManager {
         this.currentUser.history.splice(index, 1);
         this.saveCurrentUserChange();
     }
+    updateUsername(newName) {
+        if (!this.currentUser) return;
+        this.currentUser.username = newName;
+        this.saveCurrentUserChange();
+    }
+    updatePassword(newPass) {
+        if (!this.currentUser) return;
+        this.currentUser.pass = newPass;
+        this.saveCurrentUserChange();
+    }
+    removeAvatar() {
+        if (!this.currentUser) return;
+        delete this.currentUser.avatar;
+        this.saveCurrentUserChange();
+    }
     unlockAchievement(id) {
         if (!this.currentUser) return;
         if (!this.currentUser.achievements) this.currentUser.achievements = [];

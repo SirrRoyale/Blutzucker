@@ -32,21 +32,46 @@ document.addEventListener('DOMContentLoaded', () => {
         clearHistoryBtn: document.getElementById('clearHistoryBtn'),
         openSettingsBtn: document.getElementById('openSettingsBtn'),
         closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-        settingsMenu: document.getElementById('settingsMenu')
+        settingsMenu: document.getElementById('settingsMenu'),
+        avatarInput: document.getElementById('avatarInput'),
+        profileAvatar: document.getElementById('profileAvatar'),
+        topNavAvatar: document.getElementById('topNavAvatar'),
+        removeAvatarBtn: document.getElementById('removeAvatarBtn'),
+        openAccSettingsBtn: document.getElementById('openAccSettingsBtn'),
+        accSettingsMenu: document.getElementById('accSettingsMenu'),
+        closeAccSettingsBtn: document.getElementById('closeAccSettingsBtn'),
+        saveAccSettingsBtn: document.getElementById('saveAccSettingsBtn'),
+        setNewUsername: document.getElementById('setNewUsername'),
+        setNewPassword: document.getElementById('setNewPassword')
     };
 
     let authMode = 'login';
 
     function updateAuthUI() {
+        const setAvatar = (el, src) => {
+            if (!el) return;
+            if (src) el.innerHTML = `<img src="${src}" alt="Avatar">`;
+            else el.innerHTML = '👤';
+        };
+
         if (auth.currentUser) {
-            if (els.namePreview) els.namePreview.textContent = auth.currentUser.email.split('@')[0];
+            const displayName = auth.currentUser.username || auth.currentUser.email.split('@')[0];
+            if (els.namePreview) els.namePreview.textContent = displayName;
+            if (els.usernameDisplay) els.usernameDisplay.textContent = displayName;
+
             if (els.achCountPreview) {
                 const earned = (auth.currentUser.achievements || []).length;
                 els.achCountPreview.textContent = `${earned}/${auth.achievements.length}`;
             }
+            setAvatar(els.topNavAvatar, auth.currentUser.avatar);
+            setAvatar(els.profileAvatar, auth.currentUser.avatar);
+            if (els.removeAvatarBtn) els.removeAvatarBtn.style.display = auth.currentUser.avatar ? 'flex' : 'none';
         } else {
             if (els.namePreview) els.namePreview.textContent = "Nicht angemeldet";
             if (els.achCountPreview) els.achCountPreview.textContent = "--";
+            setAvatar(els.topNavAvatar, null);
+            setAvatar(els.profileAvatar, null);
+            if (els.removeAvatarBtn) els.removeAvatarBtn.style.display = 'none';
         }
     }
 
@@ -195,6 +220,42 @@ document.addEventListener('DOMContentLoaded', () => {
     // Settings Menu
     els.openSettingsBtn?.addEventListener('click', () => els.settingsMenu.classList.remove('hidden'));
     els.closeSettingsBtn?.addEventListener('click', () => els.settingsMenu.classList.add('hidden'));
+
+    // Profile Management
+    els.avatarInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file || !auth.currentUser) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            auth.currentUser.avatar = event.target.result;
+            auth.saveCurrentUserChange();
+            updateAuthUI();
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Account Settings
+    els.openAccSettingsBtn?.addEventListener('click', () => {
+        if (!auth.currentUser) return;
+        els.setNewUsername.value = auth.currentUser.username || auth.currentUser.email.split('@')[0];
+        els.setNewPassword.value = '';
+        els.accSettingsMenu.classList.remove('hidden');
+    });
+
+    els.closeAccSettingsBtn?.addEventListener('click', () => els.accSettingsMenu.classList.add('hidden'));
+
+    els.saveAccSettingsBtn?.addEventListener('click', () => {
+        const nextName = els.setNewUsername.value.trim();
+        const nextPass = els.setNewPassword.value;
+
+        if (nextName) auth.updateUsername(nextName);
+        if (nextPass) auth.updatePassword(nextPass);
+
+        auth.saveCurrentUserChange();
+        updateAuthUI();
+        els.accSettingsMenu.classList.add('hidden');
+        alert("Einstellungen gespeichert!");
+    });
 
     // --- Mode Selection Logic ---
     const startGameBtn = document.getElementById('startGameBtn');

@@ -19,7 +19,15 @@ class Simulation {
         this.activityCount = 0;
         this.dayEnded = false;
         this.initChart();
+        this.updateHeaderAvatar();
         this.updateUI();
+    }
+
+    updateHeaderAvatar() {
+        const el = document.getElementById('headerAvatar');
+        if (el && this.auth && this.auth.currentUser && this.auth.currentUser.avatar) {
+            el.innerHTML = `<img src="${this.auth.currentUser.avatar}" alt="Avatar">`;
+        }
     }
 
     fullReset() {
@@ -303,6 +311,7 @@ class Simulation {
 document.addEventListener('DOMContentLoaded', () => {
     const sim = new Simulation();
     sim.auth = new AuthManager(sim);
+    sim.updateHeaderAvatar(); // Re-trigger now that auth is ready
 
     // Character Selection
     const typeButtons = document.querySelectorAll('.body-type-btn');
