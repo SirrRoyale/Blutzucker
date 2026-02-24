@@ -147,7 +147,10 @@ class DayTracker {
 class AuthManager {
     constructor(simulation) {
         this.sim = simulation;
-        this.apiUrl = 'http://localhost:3000/api/accounts';
+        // Host-unabhängige URL für lokale Entwicklung und Vercel
+        this.apiUrl = window.location.origin.includes('localhost')
+            ? 'http://localhost:3000/api/accounts'
+            : '/api/accounts';
         this.users = {};
         this.currentUser = JSON.parse(localStorage.getItem('sim_current_user') || 'null');
         this.achievements = [
