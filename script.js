@@ -223,6 +223,12 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
       this.sim = simulation;
       this.currentUser = null;
       this.token = localStorage.getItem("token") || null;
+      try {
+        const storedUser = localStorage.getItem("sim_current_user");
+        this.currentUser = storedUser ? JSON.parse(storedUser) : null;
+      } catch (e) {
+        this.currentUser = null;
+      }
 
       this.achievements = [
         { id: 'persistent', icon: '🤝', title: 'Dranbleiber', desc: 'Erstelle ein Konto und melde dich an.' },
@@ -371,6 +377,7 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
           this.currentUser = data.user;
 
           localStorage.setItem("token", data.token);
+          localStorage.setItem("sim_current_user", JSON.stringify(data.user));
 
           this.updateStatusUI();
           this.closeAll();
@@ -384,6 +391,7 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
       this.currentUser = null;
       this.token = null;
       localStorage.removeItem("token");
+      localStorage.removeItem("sim_current_user");
       this.updateStatusUI();
       this.closeAll();
     }
@@ -439,6 +447,7 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
 
         if (!this.currentUser.achievements.includes(id)) {
           this.currentUser.achievements.push(id);
+          this.saveCurrentUserChange();
         }
 
         this.updateStatusUI();
@@ -575,6 +584,12 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
     closeAll() {
       if (this.els.authMenu) this.els.authMenu.classList.add('hidden');
       if (this.els.profileMenu) this.els.profileMenu.classList.add('hidden');
+    }
+
+    saveCurrentUserChange() {
+      if (this.currentUser) {
+        localStorage.setItem("sim_current_user", JSON.stringify(this.currentUser));
+      }
     }
   }
 
@@ -1238,8 +1253,11 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
         // Hide start overlays and show dashboard
         const overlays = document.querySelectorAll('.start-overlay');
         overlays.forEach(o => o.classList.add('hidden'));
-        dashboard.classList.remove('hidden');
-        dashboard.classList.remove('blur-background');
+
+        if (dashboard) {
+          dashboard.classList.remove('hidden');
+          dashboard.classList.remove('blur-background');
+        }
 
         const storySelection = document.getElementById('storySelection');
         if (storySelection) storySelection.classList.add('hidden');
