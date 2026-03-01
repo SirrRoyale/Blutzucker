@@ -68,27 +68,59 @@ app.post("/api/login", async (req, res) => {
 /* ---------------- ADD HISTORY ---------------- */
 
 app.post("/api/history", async (req, res) => {
-    const { userId, entry } = req.body;
+    try {
+        const { userId, entry } = req.body;
+        console.log("➡️ /api/history called -> userId:", userId, "entry:", entry);
 
-    await User.findByIdAndUpdate(
-        userId,
-        { $push: { history: entry } }
-    );
+        if (!userId) {
+            return res.status(400).json({ error: "Missing userId" });
+        }
 
-    res.json({ success: true });
+        const result = await User.findByIdAndUpdate(
+            userId,
+            { $push: { history: entry } },
+            { new: true }
+        );
+
+        if (!result) {
+            console.log("⚠️ /api/history - User not found in DB with ID:", userId);
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({ success: true, user: result });
+    } catch (err) {
+        console.error("❌ /api/history ERROR:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 /* ---------------- ADD ACHIEVEMENT ---------------- */
 
 app.post("/api/achievement", async (req, res) => {
-    const { userId, achievement } = req.body;
+    try {
+        const { userId, achievement } = req.body;
+        console.log("➡️ /api/achievement called -> userId:", userId, "achievement:", achievement);
 
-    await User.findByIdAndUpdate(
-        userId,
-        { $addToSet: { achievements: achievement } }
-    );
+        if (!userId) {
+            return res.status(400).json({ error: "Missing userId" });
+        }
 
-    res.json({ success: true });
+        const result = await User.findByIdAndUpdate(
+            userId,
+            { $addToSet: { achievements: achievement } },
+            { new: true }
+        );
+
+        if (!result) {
+            console.log("⚠️ /api/achievement - User not found in DB with ID:", userId);
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({ success: true, user: result });
+    } catch (err) {
+        console.error("❌ /api/achievement ERROR:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 /* ---------------- SERVER START ---------------- */

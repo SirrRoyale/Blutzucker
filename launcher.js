@@ -295,7 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.story-lvl-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!btn.disabled) {
-                window.location.href = `storymode.html?level=${btn.dataset.level}`;
+                // The game logic handles startStoryLevel natively in script.js now.
+                // Redirect removed.
             }
         });
     });

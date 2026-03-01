@@ -431,7 +431,8 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
       if (!this.currentUser) return;
 
       try {
-        await fetch(`${API_BASE}/api/achievement`, {
+        console.log("➡️ POSTing achievement:", id, "for user:", this.currentUser._id);
+        const res = await fetch(`${API_BASE}/api/achievement`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -439,6 +440,12 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
             achievement: id
           })
         });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error("❌ Achievement API Error:", res.status, errText);
+          return;
+        }
 
         // Optional: lokal auch pushen für UI
         if (!this.currentUser.achievements) {
@@ -558,14 +565,26 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
         hypers: stats.hypers
       };
 
-      await fetch(`${API_BASE}/api/history`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: this.currentUser._id,
-          entry
-        })
-      });
+      try {
+        console.log("➡️ POSTing history entry:", entry, "for user:", this.currentUser._id);
+        const res = await fetch(`${API_BASE}/api/history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: this.currentUser._id,
+            entry
+          })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error("❌ History API Error:", res.status, errText);
+        } else {
+          console.log("✅ History saved successfully.");
+        }
+      } catch (err) {
+        console.error("❌ History Fetch failed:", err);
+      }
     }
 
     updateStatusUI() {
