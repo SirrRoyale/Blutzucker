@@ -590,36 +590,6 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
       }
     }
 
-    async saveHighscore(points, grade, bodyType) {
-      if (!this.currentUser) return;
-      try {
-        console.log("➡️ POSTing highscore:", points, "for user:", this.currentUser._id);
-        const res = await fetch(`${API_BASE}/api/highscore`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: this.currentUser._id,
-            bodyType,
-            points,
-            grade
-          })
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          console.error("❌ Highscore API Error:", res.status, errText);
-        } else {
-          const data = await res.json();
-          console.log("✅ Highscore saved successfully.");
-          this.currentUser.highscore = data.highscore;
-          this.currentUser.scores = data.scores;
-          this.saveCurrentUserChange();
-        }
-      } catch (err) {
-        console.error("❌ Highscore Fetch failed:", err);
-      }
-    }
-
     updateStatusUI() {
       if (this.currentUser) {
         if (this.els.namePreview) this.els.namePreview.textContent = this.currentUser.email.split('@')[0];
@@ -878,18 +848,6 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
         this.auth.unlockAchievement('survive_day');
         if (stats.tir === 100) this.auth.unlockAchievement('perfect_tir');
         if (stats.grade === 'A') this.auth.unlockAchievement('grade_a');
-
-        let points = 50;
-        if (stats.grade === 'A') points = 1000;
-        else if (stats.grade === 'B') points = 700;
-        else if (stats.grade === 'C') points = 400;
-        else if (stats.grade === 'D') points = 200;
-        if (stats.tir === 100) points += 200;
-
-        const bodyTypeDisplay = document.querySelector('#bodyTypeDisplay .text');
-        const bodyType = bodyTypeDisplay ? bodyTypeDisplay.textContent : 'Standard';
-
-        this.auth.saveHighscore(points, stats.grade, bodyType);
       }
 
       const overlay = document.getElementById('resultsOverlay');
@@ -1364,63 +1322,6 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
     const settingsMenu = document.getElementById('settingsMenu');
     const openSettingsBtn = document.getElementById('openSettingsBtn');
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-
-    // --- Highscore UI Elements ---
-    const highscoreMenu = document.getElementById('highscoreMenu');
-    const openHighscoreBtn = document.getElementById('openHighscoreBtn');
-    const closeHighscoreBtn = document.getElementById('closeHighscoreBtn');
-    const closeHighscoreBtnBottom = document.getElementById('closeHighscoreBtnBottom');
-
-    if (openHighscoreBtn) {
-      openHighscoreBtn.addEventListener('click', async () => {
-        sounds.play('click');
-        if (highscoreMenu) highscoreMenu.classList.remove('hidden');
-
-        // Let's populate the data if logged in
-        if (window.sim && window.sim.auth && window.sim.auth.currentUser) {
-          const userId = window.sim.auth.currentUser._id;
-          try {
-            const res = await fetch(`${API_BASE}/api/highscore/${userId}`);
-            if (res.ok) {
-              const data = await res.json();
-              document.getElementById('hsTotalPoints').textContent = data.highscore.totalPoints || 0;
-              document.getElementById('hsBestScore').textContent = data.highscore.bestScore || 0;
-
-              const listEl = document.getElementById('highscoreList');
-              listEl.innerHTML = '';
-              const scores = (data.scores || []).slice().reverse().slice(0, 10);
-              if (scores.length === 0) listEl.innerHTML = '<p style="color:#aaa;">Keine Läufe gefunden.</p>';
-              scores.forEach(s => {
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                item.style.padding = '10px';
-                item.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
-                const d = new Date(s.date);
-                item.innerHTML = `
-                  <div style="display:flex; justify-content:space-between; width:100%;">
-                    <span><strong>${s.points} Pkt.</strong> (${s.grade})</span>
-                    <span style="font-size:12px; color:#aaa;">${d.toLocaleDateString()} ${d.toLocaleTimeString()}</span>
-                  </div>
-                  <div style="font-size:12px; color:#888;">Typ: ${s.bodyType}</div>
-                `;
-                listEl.appendChild(item);
-              });
-            }
-          } catch (e) { console.error("Highscore fetch error:", e); }
-        } else {
-          document.getElementById('hsTotalPoints').textContent = "0";
-          document.getElementById('hsBestScore').textContent = "0";
-          document.getElementById('highscoreList').innerHTML = '<p style="color:#aaa;">Bitte anmelden für Highscores.</p>';
-        }
-      });
-    }
-
-    const closeHs = () => {
-      sounds.play('click');
-      if (highscoreMenu) highscoreMenu.classList.add('hidden');
-    };
-    if (closeHighscoreBtn) closeHighscoreBtn.addEventListener('click', closeHs);
-    if (closeHighscoreBtnBottom) closeHighscoreBtnBottom.addEventListener('click', closeHs);
     const masterVolume = document.getElementById('masterVolume');
     const sfxVolume = document.getElementById('sfxVolume');
     const masterVolumeValue = document.getElementById('masterVolumeValue');
