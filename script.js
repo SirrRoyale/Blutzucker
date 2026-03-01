@@ -1,4 +1,4 @@
-
+const API_BASE = "https://blutzucker-cfad.onrender.com";
 (function () { // Wrap in IIFE to avoid global scope pollution
   // --- Constants & Config ---
   const CONFIG = {
@@ -342,7 +342,7 @@
       const pass = document.getElementById('authPassword').value;
 
       if (this.mode === 'register') {
-        const res = await fetch('/api/register', {
+        const res = await fetch(`${API_BASE}/api/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password: pass })
@@ -358,7 +358,7 @@
         }
 
       } else {
-        const res = await fetch('/api/login', {
+        const res = await fetch(`${API_BASE}/api/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password: pass })
@@ -423,7 +423,7 @@
       if (!this.currentUser) return;
 
       try {
-        await fetch('/api/achievement', {
+        await fetch(`${API_BASE}/api/achievement`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -549,7 +549,7 @@
         hypers: stats.hypers
       };
 
-      await fetch('/api/history', {
+      await fetch(`${API_BASE}/api/history`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
