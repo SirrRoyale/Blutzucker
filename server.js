@@ -123,6 +123,57 @@ app.post("/api/achievement", async (req, res) => {
     }
 });
 
+/* ---------------- HIGHSCORE ---------------- */
+
+app.post("/api/highscore", async (req, res) => {
+    try {
+        const { userId, bodyType, points, grade } = req.body;
+        console.log("➡️ /api/highscore called -> userId:", userId, "points:", points);
+
+        if (!userId) return res.status(400).json({ error: "Missing userId" });
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        const entry = {
+            date: new Date().toISOString(),
+            bodyType,
+            points,
+            grade
+        };
+
+        const newTotal = (user.highscore?.totalPoints || 0) + points;
+        const newBest = Math.max(user.highscore?.bestScore || 0, points);
+
+        user.scores.push(entry);
+        user.highscore = { totalPoints: newTotal, bestScore: newBest };
+
+        await user.save();
+
+        res.json({ success: true, highscore: user.highscore, scores: user.scores });
+    } catch (err) {
+        console.error("❌ /api/highscore POST ERROR:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get("/api/highscore/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        res.json({
+            success: true,
+            highscore: user.highscore || { totalPoints: 0, bestScore: 0 },
+            scores: user.scores || []
+        });
+    } catch (err) {
+        console.error("❌ /api/highscore GET ERROR:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 /* ---------------- SERVER START ---------------- */
 
 app.listen(PORT, () => {

@@ -13,7 +13,17 @@ const userSchema = new mongoose.Schema({
     password: String,
     username: String,
     history: [historySchema],
-    achievements: [String]
+    achievements: [String],
+    highscore: {
+        totalPoints: { type: Number, default: 0 },
+        bestScore: { type: Number, default: 0 }
+    },
+    scores: [{
+        date: String,
+        bodyType: String,
+        points: Number,
+        grade: String
+    }]
 });
 
 module.exports = mongoose.model("User", userSchema);

@@ -38,6 +38,7 @@
       <h1>Blutzucker Simulation</h1>
       <div class="menu-btn-group">
         <button id="startGameBtn" class="sim-btn menu-large-btn">🎮 START</button>
+        <button id="openHighscoreBtn" class="sim-btn menu-large-btn">🏆 Highscore</button>
         <button id="openSettingsBtn" class="sim-btn menu-large-btn secondary">⚙️ Einstellungen</button>
       </div>
     </div>
@@ -185,6 +186,31 @@
           <button id="saveAccSettingsBtn" class="sim-btn">Speichern</button>
           <button id="closeAccSettingsBtn" class="sim-btn secondary">Abbrechen</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [HIGHSCORE] -->
+  <div id="highscoreMenu" class="start-overlay hidden">
+    <div class="glass-panel start-card profile-card">
+      <div class="card-header">
+        <h1>🏆 Lokaler Highscore</h1>
+        <button id="closeHighscoreBtn" class="close-btn">×</button>
+      </div>
+      <div class="highscore-stats-row" style="display:flex; justify-content:space-around; margin: 15px 0;">
+        <div class="p-stat" style="text-align:center;"><span class="p-label"
+            style="display:block; font-size:12px; color:#aaa;">Gesamtpunkte</span><span id="hsTotalPoints"
+            class="p-value" style="font-size:24px; font-weight:bold; color:var(--primary-color);">0</span></div>
+        <div class="p-stat" style="text-align:center;"><span class="p-label"
+            style="display:block; font-size:12px; color:#aaa;">Best Score</span><span id="hsBestScore" class="p-value"
+            style="font-size:24px; font-weight:bold; color:var(--primary-color);">0</span></div>
+      </div>
+      <div class="profile-history">
+        <h3 style="margin-bottom:10px;">Letzte Läufe</h3>
+        <div id="highscoreList" class="history-list" style="max-height: 200px; overflow-y: auto;"></div>
+      </div>
+      <div class="profile-actions" style="margin-top:20px;">
+        <button id="closeHighscoreBtnBottom" class="sim-btn">Schließen</button>
       </div>
     </div>
   </div>
