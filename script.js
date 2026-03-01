@@ -631,6 +631,13 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
       this.updateUI();
     }
 
+    startStoryLevel(level) {
+      this.fullReset();
+      this.currentStoryLevel = parseInt(level, 10);
+      this.metabolismRate = 15; // default rate
+      this.updateUI();
+    }
+
     // Time Management
     tick(minutes) {
       if (this.isDead) return;
@@ -1215,6 +1222,37 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
       // Log selection (if log existed, otherwise just console or nothing)
       // sim.log(`Simulation gestartet. Körpertyp: ${typeName} (${rate > 0 ? '+' : ''}${rate} mg/dL/h)`);
     }
+
+    // --- Story Mode Logic ---
+    const storyButtons = document.querySelectorAll('.story-lvl-btn');
+    storyButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const level = btn.dataset.level;
+        if (typeof sim.startStoryLevel === 'function') {
+          sim.startStoryLevel(level);
+        }
+
+        // Hide start overlays and show dashboard
+        const overlays = document.querySelectorAll('.start-overlay');
+        overlays.forEach(o => o.classList.add('hidden'));
+        dashboard.classList.remove('hidden');
+        dashboard.classList.remove('blur-background');
+
+        const storySelection = document.getElementById('storySelection');
+        if (storySelection) storySelection.classList.add('hidden');
+
+        const mainMenu = document.getElementById('mainMenu');
+        if (mainMenu) mainMenu.classList.add('hidden'); // explicitly hide fully
+
+        if (bodyTypeDisplay) {
+          bodyTypeDisplay.querySelector('.icon').textContent = "📖";
+          bodyTypeDisplay.querySelector('.text').textContent = `Story Level ${level}`;
+        }
+      });
+    });
 
     // --- Collapsible Cards Logic (Accordion) ---
     const collapsibles = document.querySelectorAll('.collapsible-card');
