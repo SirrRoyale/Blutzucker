@@ -1,4 +1,4 @@
-const API_BASE = "https://blutzucker-cfad.onrender.com";
+const API_BASE = "http://localhost:3000";
 (function () { // Wrap in IIFE to avoid global scope pollution
   // --- Constants & Config ---
   const CONFIG = {
@@ -581,6 +581,9 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
           console.error("❌ History API Error:", res.status, errText);
         } else {
           console.log("✅ History saved successfully.");
+          if (!this.currentUser.history) this.currentUser.history = [];
+          this.currentUser.history.push(entry);
+          this.saveCurrentUserChange();
         }
       } catch (err) {
         console.error("❌ History Fetch failed:", err);
