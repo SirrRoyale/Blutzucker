@@ -147,10 +147,6 @@ class DayTracker {
 class AuthManager {
     constructor(simulation) {
         this.sim = simulation;
-        // Host-unabhängige URL für lokale Entwicklung und Vercel
-        this.apiUrl = window.location.origin.includes('localhost')
-            ? 'http://localhost:3000/api/accounts'
-            : '/api/accounts';
         this.users = {};
         this.currentUser = JSON.parse(localStorage.getItem('sim_current_user') || 'null');
         this.achievements = [
@@ -170,19 +166,7 @@ class AuthManager {
     }
 
     async init() {
-        try {
-            const resp = await fetch(this.apiUrl);
-            if (resp.ok) {
-                const data = await resp.json();
-                this.users = data.accounts || {};
-                console.log("Benutzerdaten erfolgreich vom Server geladen.");
-                // Sync to localStorage as backup
-                localStorage.setItem('sim_users', JSON.stringify(this.users));
-            }
-        } catch (e) {
-            console.warn("Backend nicht erreichbar, nutze lokalen Speicher.");
-            this.users = JSON.parse(localStorage.getItem('sim_users') || '{}');
-        }
+        this.users = JSON.parse(localStorage.getItem('sim_users') || '{}');
     }
 
     async hashPassword(password) {
@@ -195,17 +179,6 @@ class AuthManager {
 
     async saveUsers() {
         localStorage.setItem('sim_users', JSON.stringify(this.users));
-        try {
-            await fetch(this.apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accounts: this.users })
-            });
-            if (this.sim && this.sim.updateSyncIndicator) this.sim.updateSyncIndicator(true);
-        } catch (e) {
-            console.error("Fehler beim Cloud-Sync:", e);
-            if (this.sim && this.sim.updateSyncIndicator) this.sim.updateSyncIndicator(false);
-        }
     }
 
     async saveCurrentUserChange() {
