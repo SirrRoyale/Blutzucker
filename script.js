@@ -1107,7 +1107,9 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
 
     const startGameBtn = document.getElementById('startGameBtn');
     if (startGameBtn) {
-      startGameBtn.addEventListener('click', () => {
+      startGameBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const mainMenuCard = document.getElementById('mainMenuCard');
         if (mainMenuCard) mainMenuCard.classList.add('hidden');
         const modeSelection = document.getElementById('modeSelection');
@@ -1115,12 +1117,47 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
       });
     }
 
-    const backToMainMenuBtn = document.getElementById('backToMainMenuBtn');
-    if (backToMainMenuBtn) {
-      backToMainMenuBtn.addEventListener('click', () => {
+    const backToMainFromMode = document.getElementById('backToMainFromMode');
+    if (backToMainFromMode) {
+      backToMainFromMode.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const modeSelection = document.getElementById('modeSelection');
         if (modeSelection) modeSelection.classList.add('hidden');
         const mainMenuCard = document.getElementById('mainMenuCard');
         if (mainMenuCard) mainMenuCard.classList.remove('hidden');
+      });
+    }
+
+    const startArcade = document.getElementById('startArcade');
+    if (startArcade) {
+      startArcade.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.location.href = 'arcade.html';
+      });
+    }
+
+    const startStory = document.getElementById('startStory');
+    const storySelection = document.getElementById('storySelection');
+    if (startStory) {
+      startStory.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const modeSelection = document.getElementById('modeSelection');
+        if (modeSelection) modeSelection.classList.add('hidden');
+        if (storySelection) storySelection.classList.remove('hidden');
+      });
+    }
+
+    const backToModeFromStory = document.getElementById('backToModeFromStory');
+    if (backToModeFromStory) {
+      backToModeFromStory.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (storySelection) storySelection.classList.add('hidden');
+        const modeSelection = document.getElementById('modeSelection');
+        if (modeSelection) modeSelection.classList.remove('hidden');
       });
     }
 
