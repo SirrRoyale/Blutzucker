@@ -1108,7 +1108,8 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
     const startGameBtn = document.getElementById('startGameBtn');
     if (startGameBtn) {
       startGameBtn.addEventListener('click', () => {
-        mainMenu.classList.add('hidden');
+        const mainMenuCard = document.getElementById('mainMenuCard');
+        if (mainMenuCard) mainMenuCard.classList.add('hidden');
         const modeSelection = document.getElementById('modeSelection');
         if (modeSelection) modeSelection.classList.remove('hidden');
       });
@@ -1118,7 +1119,8 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
     if (backToMainMenuBtn) {
       backToMainMenuBtn.addEventListener('click', () => {
         if (modeSelection) modeSelection.classList.add('hidden');
-        mainMenu.classList.remove('hidden');
+        const mainMenuCard = document.getElementById('mainMenuCard');
+        if (mainMenuCard) mainMenuCard.classList.remove('hidden');
       });
     }
 
