@@ -221,8 +221,8 @@
   class AuthManager {
     constructor(simulation) {
       this.sim = simulation;
-      this.users = JSON.parse(localStorage.getItem('sim_users') || '{}');
-      this.currentUser = JSON.parse(localStorage.getItem('sim_current_user') || 'null');
+      this.currentUser = null;
+      this.token = localStorage.getItem("token") || null;
 
       this.achievements = [
         { id: 'persistent', icon: '🤝', title: 'Dranbleiber', desc: 'Erstelle ein Konto und melde dich an.' },
@@ -337,48 +337,55 @@
       if (submit) submit.textContent = mode === 'login' ? 'Anmelden' : 'Konto erstellen';
     }
 
-    handleAuth() {
+    async handleAuth() {
       const email = document.getElementById('authEmail').value;
       const pass = document.getElementById('authPassword').value;
 
       if (this.mode === 'register') {
-        if (this.users[email]) {
-          alert("Diese Email ist bereits registriert.");
-          return;
-        }
-        this.users[email] = {
-          email,
-          pass,
-          history: [],
-          stats: { sims: 0, best: '--' },
-          achievements: []
-        };
-        this.saveUsers();
-        alert("Konto erstellt! Du kannst dich jetzt anmelden.");
-        this.switchMode('login');
-      } else {
-        const user = this.users[email];
-        if (user && user.pass === pass) {
-          this.currentUser = user;
-          if (!this.currentUser.achievements) this.currentUser.achievements = [];
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: pass })
+        });
 
-          localStorage.setItem('sim_current_user', JSON.stringify(user));
-          this.unlockAchievement('persistent');
+        const data = await res.json();
+
+        if (res.ok) {
+          alert("Konto erstellt! Bitte anmelden.");
+          this.switchMode('login');
+        } else {
+          alert(data.error);
+        }
+
+      } else {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: pass })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          this.token = data.token;
+          this.currentUser = data.user;
+
+          localStorage.setItem("token", data.token);
+
           this.updateStatusUI();
           this.closeAll();
-          sounds.play('click');
         } else {
-          alert("Ungültige Email oder Passwort.");
+          alert(data.error);
         }
       }
     }
 
     logout() {
       this.currentUser = null;
-      localStorage.removeItem('sim_current_user');
+      this.token = null;
+      localStorage.removeItem("token");
       this.updateStatusUI();
       this.closeAll();
-      sounds.play('click');
     }
 
     openAuth() {
@@ -412,15 +419,28 @@
       });
     }
 
-    unlockAchievement(id) {
+    async unlockAchievement(id) {
       if (!this.currentUser) return;
-      if (!this.currentUser.achievements) this.currentUser.achievements = [];
 
-      if (!this.currentUser.achievements.includes(id)) {
-        this.currentUser.achievements.push(id);
-        this.users[this.currentUser.email] = this.currentUser;
-        this.saveUsers();
-        localStorage.setItem('sim_current_user', JSON.stringify(this.currentUser));
+      try {
+        await fetch('/api/achievement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: this.currentUser._id,
+            achievement: id
+          })
+        });
+
+        // Optional: lokal auch pushen für UI
+        if (!this.currentUser.achievements) {
+          this.currentUser.achievements = [];
+        }
+
+        if (!this.currentUser.achievements.includes(id)) {
+          this.currentUser.achievements.push(id);
+        }
+
         this.updateStatusUI();
 
         const ach = this.achievements.find(a => a.id === id);
@@ -428,8 +448,10 @@
           this.sim.showNotification(`ERFOLG FREIGESCHALTET: ${ach.icon} ${ach.title}`);
         }
 
-        // Check for Platinum
         this.checkPlatinum();
+
+      } catch (err) {
+        console.error("Achievement Fehler:", err);
       }
     }
 
@@ -451,6 +473,9 @@
       if (this.els.usernameDisplay) this.els.usernameDisplay.textContent = this.currentUser.email.split('@')[0];
       if (this.els.emailDisplay) this.els.emailDisplay.textContent = this.currentUser.email;
       if (this.els.simCount) this.els.simCount.textContent = this.currentUser.history.length;
+      if (!this.currentUser.history) {
+        this.currentUser.history = [];
+      }
 
       const grades = this.currentUser.history.map(h => h.grade);
       if (this.els.bestGrade) {
@@ -513,31 +538,25 @@
       }
     }
 
-    saveCurrentUserChange() {
-      this.users[this.currentUser.email] = this.currentUser;
-      this.saveUsers();
-      localStorage.setItem('sim_current_user', JSON.stringify(this.currentUser));
-    }
-
-    saveResult(stats) {
+    async saveResult(stats) {
       if (!this.currentUser) return;
 
-      const result = {
-        date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }),
+      const entry = {
+        date: new Date().toLocaleString(),
         grade: stats.grade,
         tir: stats.tir,
         hypos: stats.hypos,
         hypers: stats.hypers
       };
 
-      this.currentUser.history.push(result);
-      this.users[this.currentUser.email] = this.currentUser;
-      this.saveUsers();
-      localStorage.setItem('sim_current_user', JSON.stringify(this.currentUser));
-    }
-
-    saveUsers() {
-      localStorage.setItem('sim_users', JSON.stringify(this.users));
+      await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: this.currentUser._id,
+          entry
+        })
+      });
     }
 
     updateStatusUI() {
