@@ -41,9 +41,10 @@ app.post("/api/register", async (req, res) => {
             achievements: []
         });
 
-        await user.save();
+        const savedUser = await user.save();
+        const token = jwt.sign({ id: savedUser._id }, process.env.JWT_SECRET);
 
-        res.json({ message: "User erstellt" });
+        res.json({ message: "User erstellt", token, user: savedUser });
     } catch (err) {
         res.status(400).json({ error: "User existiert bereits" });
     }

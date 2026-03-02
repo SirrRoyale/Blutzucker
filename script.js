@@ -380,8 +380,15 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
         const data = await res.json();
 
         if (res.ok) {
-          alert("Konto erstellt! Bitte anmelden.");
-          this.switchMode('login');
+          this.token = data.token;
+          this.currentUser = data.user;
+
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("sim_current_user", JSON.stringify(data.user));
+
+          this.updateStatusUI();
+          this.closeAll();
+          alert("Konto erstellt & angemeldet!");
         } else {
           alert(data.error);
         }
@@ -467,6 +474,7 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
         if (!res.ok) {
           const errText = await res.text();
           console.error("❌ Achievement API Error:", res.status, errText);
+          alert("Fehler beim Speichern des Erfolgs: " + errText);
           return;
         }
 
@@ -621,6 +629,7 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
         if (!res.ok) {
           const errText = await res.text();
           console.error("❌ History API Error:", res.status, errText);
+          alert("Fehler beim Speichern der Historie: " + errText);
         } else {
           console.log("✅ History saved successfully.");
           if (!this.currentUser.history) this.currentUser.history = [];
