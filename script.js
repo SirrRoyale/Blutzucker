@@ -1,4 +1,4 @@
-const API_BASE = "https://blutzucker-cfad.onrender.com";
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') ? 'http://localhost:3000' : 'https://blutzucker-cfad.onrender.com';
 (function () { // Wrap in IIFE to avoid global scope pollution
   // --- Constants & Config ---
   const CONFIG = {

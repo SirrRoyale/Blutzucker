@@ -33,8 +33,6 @@ const CONFIG = {
     ]
 };
 
-const API_BASE = "https://blutzucker-cfad.onrender.com";
-
 // --- Shared Classes ---
 class SoundManager {
     constructor() {
