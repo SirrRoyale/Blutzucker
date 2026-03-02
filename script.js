@@ -231,7 +231,6 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
       }
 
       this.achievements = [
-        { id: 'persistent', icon: '🤝', title: 'Dranbleiber', desc: 'Erstelle ein Konto und melde dich an.' },
         { id: 'survive_day', icon: '🏆', title: 'Überlebenskünstler', desc: 'Überlebe einen vollen Tag in der Simulation.' },
         { id: 'perfect_tir', icon: '🎯', title: 'Meister der Zeit', desc: 'Erreiche 100% Time in Range für einen Tag.' },
         { id: 'grade_a', icon: '📜', title: 'Musterschüler', desc: 'Erreiche die Bestnote A bei der Tagesauswertung.' },
@@ -274,7 +273,11 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
         closeAch: document.getElementById('closeAchievementsBtn'),
         closeAchBottom: document.getElementById('closeAchievementsBtnBottom'),
         achCountPreview: document.querySelector('.achievement-count-preview'),
-        clearHistoryBtn: document.getElementById('clearHistoryBtn')
+        clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+        avatarInput: document.getElementById('avatarInput'),
+        removeAvatarBtn: document.getElementById('removeAvatarBtn'),
+        profileAvatar: document.getElementById('profileAvatar'),
+        topNavAvatar: document.getElementById('topNavAvatar')
       };
 
       this.mode = 'login'; // 'login' or 'register'
@@ -330,6 +333,26 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
 
       if (this.els.clearHistoryBtn) {
         this.els.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
+      }
+
+      if (this.els.avatarInput) {
+        this.els.avatarInput.addEventListener('change', async (e) => {
+          const file = e.target.files[0];
+          if (!file || !this.currentUser) return;
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            await this.updateAvatar(event.target.result);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (this.els.removeAvatarBtn) {
+        this.els.removeAvatarBtn.addEventListener('click', async () => {
+          if (confirm("Profilbild wirklich entfernen?")) {
+            await this.updateAvatar("");
+          }
+        });
       }
     }
 
@@ -484,6 +507,25 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
       }
     }
 
+    async updateAvatar(avatarData) {
+      if (!this.currentUser) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/avatar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: this.currentUser._id, avatar: avatarData })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.currentUser.avatar = data.user.avatar;
+          this.saveCurrentUserChange();
+          this.updateStatusUI();
+        }
+      } catch (err) {
+        console.error("Failed to update avatar:", err);
+      }
+    }
+
     openProfile() {
       if (!this.currentUser) return;
       if (this.els.usernameDisplay) this.els.usernameDisplay.textContent = this.currentUser.email.split('@')[0];
@@ -591,15 +633,27 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
     }
 
     updateStatusUI() {
+      const setAvatar = (el, src) => {
+        if (!el) return;
+        if (src) el.innerHTML = `<img src="${src}" alt="Avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        else el.innerHTML = '👤';
+      };
+
       if (this.currentUser) {
         if (this.els.namePreview) this.els.namePreview.textContent = this.currentUser.email.split('@')[0];
         if (this.els.achCountPreview) {
           const earned = (this.currentUser.achievements || []).length;
           this.els.achCountPreview.textContent = `${earned}/${this.achievements.length}`;
         }
+        setAvatar(this.els.topNavAvatar, this.currentUser.avatar);
+        setAvatar(this.els.profileAvatar, this.currentUser.avatar);
+        if (this.els.removeAvatarBtn) this.els.removeAvatarBtn.style.display = this.currentUser.avatar ? 'flex' : 'none';
       } else {
         if (this.els.namePreview) this.els.namePreview.textContent = "Nicht angemeldet";
         if (this.els.achCountPreview) this.els.achCountPreview.textContent = "--";
+        setAvatar(this.els.topNavAvatar, null);
+        setAvatar(this.els.profileAvatar, null);
+        if (this.els.removeAvatarBtn) this.els.removeAvatarBtn.style.display = 'none';
       }
     }
 
@@ -1268,29 +1322,7 @@ const API_BASE = "https://blutzucker-cfad.onrender.com";
         e.stopPropagation();
 
         const level = btn.dataset.level;
-        if (typeof sim.startStoryLevel === 'function') {
-          sim.startStoryLevel(level);
-        }
-
-        // Hide start overlays and show dashboard
-        const overlays = document.querySelectorAll('.start-overlay');
-        overlays.forEach(o => o.classList.add('hidden'));
-
-        if (dashboard) {
-          dashboard.classList.remove('hidden');
-          dashboard.classList.remove('blur-background');
-        }
-
-        const storySelection = document.getElementById('storySelection');
-        if (storySelection) storySelection.classList.add('hidden');
-
-        const mainMenu = document.getElementById('mainMenu');
-        if (mainMenu) mainMenu.classList.add('hidden'); // explicitly hide fully
-
-        if (bodyTypeDisplay) {
-          bodyTypeDisplay.querySelector('.icon').textContent = "📖";
-          bodyTypeDisplay.querySelector('.text').textContent = `Story Level ${level}`;
-        }
+        window.location.href = `storymode.html?level=${level}`;
       });
     });
 

@@ -174,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 const user = await auth.login(email, pass);
                 if (user) {
-                    await auth.unlockAchievement('persistent');
                     updateAuthUI();
                     updateStoryLocking();
                     els.authMenu.classList.add('hidden');
@@ -295,8 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.story-lvl-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!btn.disabled) {
-                // The game logic handles startStoryLevel natively in script.js now.
-                // Redirect removed.
+                window.location.href = 'storymode.html?level=' + parseInt(btn.dataset.level);
             }
         });
     });

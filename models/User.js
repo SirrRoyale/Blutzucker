@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, unique: true },
     password: String,
     username: String,
+    avatar: String,
     history: [historySchema],
     achievements: [String]
 });

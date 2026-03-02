@@ -150,7 +150,6 @@ class AuthManager {
         this.users = {};
         this.currentUser = JSON.parse(localStorage.getItem('sim_current_user') || 'null');
         this.achievements = [
-            { id: 'persistent', icon: '🤝', title: 'Dranbleiber', desc: 'Erstelle ein Konto und melde dich an.', category: 'Arcade' },
             { id: 'survive_day', icon: '🏆', title: 'Überlebenskünstler', desc: 'Überlebe einen vollen Tag in der Simulation.', category: 'Arcade' },
             { id: 'perfect_tir', icon: '🎯', title: 'Meister der Zeit', desc: 'Erreiche 100% Time in Range für einen Tag.', category: 'Arcade' },
             { id: 'grade_a', icon: '📜', title: 'Musterschüler', desc: 'Erreiche die Bestnote A bei der Tagesauswertung.', category: 'Arcade' },
@@ -196,7 +195,7 @@ class AuthManager {
             pass: hashedPassword,
             username: '',
             history: [],
-            achievements: ['persistent'],
+            achievements: [],
             isHashed: true
         };
         await this.saveUsers();

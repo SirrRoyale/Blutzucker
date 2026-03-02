@@ -1,4 +1,4 @@
-require("dotenv").config();
+equire("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
@@ -119,6 +119,30 @@ app.post("/api/achievement", async (req, res) => {
         res.json({ success: true, user: result });
     } catch (err) {
         console.error("❌ /api/achievement ERROR:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/* ---------------- UPDATE AVATAR ---------------- */
+
+app.post("/api/avatar", async (req, res) => {
+    try {
+        const { userId, avatar } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ error: "Missing userId" });
+        }
+
+        const result = await User.findByIdAndUpdate(
+            userId,
+            { avatar },
+            { new: true }
+        );
+
+        if (!result) return res.status(404).json({ error: "User not found" });
+
+        res.json({ success: true, user: result });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
