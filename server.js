@@ -148,6 +148,23 @@ app.post("/api/avatar", async (req, res) => {
     }
 });
 
+/* ---------------- DEBUG MONGODB ---------------- */
+
+app.get("/api/debug", async (req, res) => {
+    try {
+        const users = await User.find({}).lean();
+        const debugInfo = users.map(u => ({
+            id: u._id,
+            email: u.email,
+            histLen: u.history ? u.history.length : 0,
+            achLen: u.achievements ? u.achievements.length : 0
+        }));
+        res.json({ debugInfo, users });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 /* ---------------- SERVER START ---------------- */
 
 app.listen(PORT, () => {
